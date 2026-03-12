@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nav_Bar</title>
+    <link rel="stylesheet" href="nav_bar.css">
+</head>
+<body>
+    <!-- Nav Bar-->
+    <nav>
+        <div class="logo">
+            <h1><span class="#" style="color: white;">eu</span> Social</h1>
+        </div>
+        <!-- Hambuger -->
+        <a href="#" class="hamburger" id="hamburger">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span> 
+        </a>
+        <!-- Navigation Links-->
+        <div class="nav-links" id="nav-links">
+            <a href="#">Chat</a>
+            <a href="announcements.html">Announcements</a>
+            <a href="calendar.html">Calendar</a>
+            <a href="#">Profile</a>
+        </div>
+    </nav>
+<script>
+// open/close behavior for hamburger menu
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('nav-links');
+
+hamburger.addEventListener('click', () => {
+  // Toggles the visibility by adding/removing the 'active' class
+  navLinks.classList.toggle('active');
+});
+</script>
+</body>
+</html>

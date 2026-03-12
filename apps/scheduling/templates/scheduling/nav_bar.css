@@ -1,0 +1,84 @@
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px;
+}
+.logo {
+    background-color: #ffa31a;
+    height: 100px;
+    width: 100px;
+    border-radius: 50%;
+    padding-right: 10px;
+    padding-left: 10px;
+    padding-bottom: 10px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.nav-links {
+    display: block;
+    margin-left: 30px;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    margin-right: 160px;
+    padding: 5px, 5px, 5px;
+    gap: 5px;
+}
+.nav-links a {
+    color: black;
+    background-color: #ffa31a;
+    font-size: 25px;
+    text-decoration: none;
+    border-radius: 10%;
+    padding-left: 30px;
+    padding-right: 30px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+.nav-links a:hover {
+    color: white;
+}
+
+.hamburger {
+    display: none;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: space-around;
+    background-color:dimgrey;
+    height: 50px;
+    width: 60px;
+}
+
+.bar {
+    display: block;
+    width: 80%;
+    height: 2px;
+    background-color: #ffa31a;
+    margin-left: 5px;
+}
+
+@media (max-width: 768px) {
+    .hamburger {
+        display: flex;
+        margin-right: 50px;
+        margin-top: 30px;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        height: fit-content;
+        right: 100px;
+        left: 400px;
+        gap: 0px;
+    }
+    .nav-links a {
+        display: block;
+        font-size: 15px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        margin-top: 0px;
+        margin-bottom: 3px;
+
+    }
+}
