@@ -18,7 +18,7 @@ body{
     max-width: 900px;
     margin: 0 auto;
     overflow: auto;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
     display: flex;
     justify-content:space-between;
     
@@ -32,6 +32,7 @@ body{
     border: 2px solid orange;
     border-radius: 4px;
     padding: 5px 10px;
+    
 }
 
 /* table styling */
@@ -60,6 +61,11 @@ body{
     margin-bottom: 1em;
     overflow: hidden;
     clear: both;
+    width:70%;
+    margin-left:auto;
+    margin-right:auto;
+
+
 }
 
 #previous{
@@ -79,12 +85,51 @@ body{
 
 .footer-container-calendar select{
     cursor: pointer;
-    background: orange;
-    color: #585858;
+    background: #bdbaba;
+    color: #535252;
     border: 1px solid #bfc5c5;
     border-radius: 3px;
     padding: 5px 1em;
-    vertical-align: middle;
 }
+
+#event-section{
+    padding:10px;
+    background:#ffffff;
+    margin:20px 0;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+    border:1px solid #ccc;
+    width: 50%;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+#event-section h3{
+    font-size: 18px;
+    
+}
+
+#event-section button{
+    background: orange;
+    border:none;
+    color: white;
+    padding:5px 10px;
+    cursor: pointer;
+}
+
+#event-section input[type="date"],
+#event-section input[type="text"],
+#event-section input[type="time"],
+#event-section select[id="position"],
+#event-section select[id="employee"],
+#event-section input[type="text"]{
+    margin:10px 0;
+    padding:4px;
+    width: 100%;
+    border: none;
+    background-color: #bdbaba;
+    color:#535252;
+    width:50%;
+}
+
 
 
