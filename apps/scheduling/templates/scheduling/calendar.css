@@ -3,7 +3,7 @@
 body{
     font-family: Arial, sans-serif;
     background-color: white;
-    margin: 0;
+    margin: 100px;
 }
 
 .wrapper{
@@ -21,13 +21,15 @@ body{
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
     display: flex;
     justify-content:space-between;
+    
+    
 }
 
 .button-container-calendar button{
     cursor: pointer;
     background: orange;
     color: #fff;
-    border: 1px solida orange;
+    border: 2px solid orange;
     border-radius: 4px;
     padding: 5px 10px;
 }
@@ -40,8 +42,8 @@ body{
 
 .table-calendar td,
 .table-calendar th{
-    padding: 5px;
-    border: 1px solid #e2e2e2;
+    padding: 2%;
+    border: 1px solid #171510;
     text-align: center;
     vertical-align: top;
 }
@@ -50,10 +52,11 @@ body{
 #monthAndYear{
     text-align: center;
     margin-top: 0;
+
 }
 
 .button-container-calendar{
-    position: relative;
+    position:inherit;
     margin-bottom: 1em;
     overflow: hidden;
     clear: both;
@@ -61,25 +64,27 @@ body{
 
 #previous{
     float: left;
+    
 }
 
 #next{
     float: right;
+    
 }
 
 .footer-container-calendar{
-    margin-top: 1em;
-    border-top: 1px solid #dadada;
-    padding: 10px 0;
+    padding-left: 3%;
+    
 }
 
 .footer-container-calendar select{
     cursor: pointer;
-    background: #ffffff;
+    background: orange;
     color: #585858;
     border: 1px solid #bfc5c5;
     border-radius: 3px;
     padding: 5px 1em;
+    vertical-align: middle;
 }
 
 

@@ -9,21 +9,21 @@
 
 <body>
     <div class = "wrapper">
-        <div class = "container-calendar">
-            <h1>Calendar</h1>
-            <h3 id="monthAndYear"></h3>
-            <div class="button-container-calendar">
-                <button id="previous" onclick="previous()">
+        <h1 id="monthAndYear"></h1>
+        <div class="button-container-calendar">
+                <button id="previous" onclick="previous()"> Previous
                 </button>
-                <button id="next" onclick="next()">
+                <button id="next" onclick="next()"> Next
                 </button>
             </div>
+        <div class = "container-calendar">
             <table class="table-calendar" id="calendar" data-lang="en">
                 <thead id="thead-month"></thead>
                 <tbody id="calendar-body"></tbody>
             </table>
             <div class="footer-container-calendar">
                 <label for="month">Jump To: </label>
+                <p></p>
                 <select id="month" onchange="jump()">
                     <option value=0>Jan</option>
                     <option value=1>Feb</option>
