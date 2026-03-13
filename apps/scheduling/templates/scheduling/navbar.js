@@ -5,10 +5,14 @@ fetch
 .then(data => {
     document.getElementById("navbar").innerHTML = data;
 
+    // hamburger menu open and close
     const hamburger = document.getElementById("hamburger");
     const navLinks = document.getElementById("nav-links");
 
-    hamburger.addEventListener("click", () => {
-        navLinks.classList.toggle("active");
-    });
+    if (hamburger) {
+        hamburger.addEventListener("click", () => {
+            navLinks.classList.toggle("active");
+        });
+    }
+    
 });

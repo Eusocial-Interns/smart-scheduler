@@ -1,8 +1,5 @@
 nav {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 10px;
 }
 .logo {
     background-color: #ffa31a;
@@ -18,28 +15,25 @@ nav {
 }
 .nav-links {
     display: block;
-    margin-left: 30px;
-    margin-top: 40px;
-    margin-bottom: 40px;
-    margin-right: 160px;
-    padding: 5px, 5px, 5px;
-    gap: 5px;
+    margin: 40px;
 }
 .nav-links a {
     color: black;
     background-color: #ffa31a;
-    font-size: 25px;
+    font-size: 23px;
     text-decoration: none;
-    border-radius: 10%;
-    padding-left: 30px;
-    padding-right: 30px;
-    padding-top: 20px;
-    padding-bottom: 20px;
+    border-radius: 15%;
+    border-style: solid;
+    padding: 15px;
+    margin: 5px;
 }
 .nav-links a:hover {
     color: white;
 }
-
+.nav-links a.active {
+  color: white;
+  background-color: #fab245;  
+}
 .hamburger {
     display: none;
     cursor: pointer;
@@ -59,26 +53,27 @@ nav {
 }
 
 @media (max-width: 768px) {
+    .wrap {
+        flex-direction: column;
+    }
     .hamburger {
         display: flex;
-        margin-right: 50px;
         margin-top: 30px;
+        margin-left: 10px;
     }
 
     .nav-links {
+        display: none;
         flex-direction: column;
         height: fit-content;
-        right: 100px;
-        left: 400px;
-        gap: 0px;
+        
     }
     .nav-links a {
-        display: block;
-        font-size: 15px;
-        padding-top: 5px;
-        padding-bottom: 5px;
-        margin-top: 0px;
-        margin-bottom: 3px;
-
+        font-size: 20px;
+        padding: 0px;
+        margin: 4px;
+    }
+    .nav-links.active {
+        display: flex;
     }
 }
