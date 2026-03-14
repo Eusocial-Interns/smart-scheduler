@@ -90,7 +90,10 @@ body{
     border: 1px solid #bfc5c5;
     border-radius: 3px;
     padding: 5px 1em;
+    margin:3px;
 }
+
+/*Add Shift Module*/
 
 #event-section{
     padding:10px;
@@ -110,10 +113,13 @@ body{
 
 #event-section button{
     background: orange;
-    border:none;
+    border: none;
     color: white;
-    padding:5px 10px;
+    border: 2px solid orange;
+    border-radius: 4px;
+    padding: 5px 10px;
     cursor: pointer;
+    margin-left: 5px;
 }
 
 #event-section input[type="date"],
@@ -131,5 +137,74 @@ body{
     width:50%;
 }
 
+.event-marker {
+    position:relative;
+}
 
+.event-marker::after{
+    content:'';
+    display: block;
+    width:6px;
+    height: 6px;
+    background-color: orange;
+    border-radius:50%;
+    position: absolute;
+    bottom:0;
+    left: 0;
+}
+
+.event-tooltip{
+    position: absolute;
+    background-color: rgba(234, 232, 232, 0.763);
+    color: black;
+    padding: 20px;
+    border-radius: 4px;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display:none;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    z-index:1;
+}
+
+.event-marker:hover .event-tooltip {
+    display: block;
+}
+
+#shift-section{
+    padding: 10px;
+    background: #f5f5f5;
+    margin: 20px 0;
+    border: 1px solid #ccc;
+}
+
+#shift-section h3{
+    color: orange;
+    font-size: 18px;
+    margin:0;
+}
+
+#shiftList {
+    list-style: none;
+    padding: 0;
+}
+
+
+#shiftLift li{
+    margin: 5px 0;
+    font-size: 16px;
+}
+
+#shift-section button{
+    background: orange;
+    border: none;
+    color: white;
+    border: 2px solid orange;
+    border-radius: 4px;
+    padding: 5px 5px;
+    cursor: pointer;
+    margin: 5px;
+
+}
 
