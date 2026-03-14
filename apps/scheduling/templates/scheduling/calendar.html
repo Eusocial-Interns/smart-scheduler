@@ -9,6 +9,16 @@
 
 <body>
     <div class = "wrapper">
+        <div id="shift-section">
+            <h3>Upcoming Shifts</h3>
+            <ul id="shiftList">
+                <li data-event-id="1">
+                    <strong>Shift Title</strong>
+                    - Shift information
+                    <button class="delete-shift" onclick="deleteEvents(1)">Delete</button>
+                </li>
+            </ul>
+        </div>
         <h1 id="monthAndYear"></h1>
         <div class="button-container-calendar">
                 <button id="previous" onclick="previous()"> <
@@ -41,11 +51,12 @@
                 <select id="year" onchange="jump()"></select>
             </div>
         </div>
+        <!--Add Shift Module-->
         <div id="event-section">
             <h3>Add Shift</h3>
             <input type="date" id="eventDate">
-            <input type="time" id="eventStartTime">
-            <input type="time" id="eventEndTime">
+            <input type="time" id="eventStartTime" placeholder="Start Time">
+            <input type="time" id="eventEndTime" placeholder="End Time">
             <select id="employee" >
                 <option value="">Select employee</option>
                 <option value="0">Elizabeth</option>
@@ -58,7 +69,7 @@
                 <option value="1">Busser</option>
                 <option value="2">Cook</option>
             </select>
-            <input type="text" id="eventTitle" placeholder="Notes">
+            <!--<input type="text" id="eventTitle" placeholder="Notes">-->
             <button id="addEvent" onclick="addEvent()">Add</button>
         </div>
         
