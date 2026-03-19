@@ -17,3 +17,4 @@
 
 5. Run migrations:
    python3 manage.py migrate
+   https://github.com/EusocialDev/smart-scheduler/pull/new/feature/postgres-database-url-setup
