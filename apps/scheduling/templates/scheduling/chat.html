@@ -1,16 +1,17 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
-    <link rel="stylesheet" href="chat.css">
+    <link rel="stylesheet" href="{% static 'scheduling/css/chat.css' %}">
 </head>
 <body>
 <!-- Nav Bar -->
 <div id="navbar"></div>
-<script src="navbar.js"></script>
-<!-- Profile Content-->
+<script src="{% static 'scheduling/js/navbar.js' %}"></script>
+<!-- Chat Content-->
 <div class="content">
     <h1>Chat</h1>
     <div class="conversationList">

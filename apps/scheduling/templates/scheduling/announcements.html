@@ -1,16 +1,16 @@
-
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Announcements</title>
-    <link rel="stylesheet" href="announcements.css">
+    <link rel="stylesheet" href="{% static 'scheduling/css/announcements.css' %}">
 </head>
 <body>
     <!-- Nav Bar -->
     <div id="navbar"></div>
-    <script src="navbar.js"></script>
+    <script src="{% static 'scheduling/js/navbar.js' %}"></script>
     <!-- The Announcements Page-->
     <div class="content">
         <h1>Announcements</h1>
