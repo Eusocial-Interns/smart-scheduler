@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcements</title>
+    <link rel="stylesheet" href="announcements.css">
+</head>
+<body>
+    <!-- Nav Bar -->
+    <div id="navbar"></div>
+    <script src="navbar.js"></script>
+    <!-- The Announcements Page-->
+    <div class="content">
+        <h1>Announcements</h1>
+        <div class="announcements_area">
+            <!-- Tabs Create, New, Archive, All, Sent-->
+                <div class="tab">
+                    <button id="create">Create</button>  
+                    <button id="defaultOpen" class="tablinks" onclick="controls(event, 'New')">New</button>
+                    <button class="tablinks" onclick="controls(event, 'Archive')">Archive</button>
+                    <button class="tablinks" onclick="controls(event, 'All')">All</button>
+                    <button class="tablinks" onclick="controls(event, 'Sent')">Sent</button>
+                </div>
+            <!-- Tab Content -->
+            <div id="NewMessage" class="messagecontent">
+                <ul>
+                    <li><h2>email1</h2></li> 
+                    <li><h2>email2</h2></li> 
+                </ul>
+            </div>
+            <div id="NewTab" class="tabcontent">
+                <h2>email1</h2>
+                <p> insert new content...</p>
+            </div>
+
+            <div id="ArchiveMessage" class="messagecontent">
+                <ul>
+                    <li><h2>email1</h2></li>  
+                    <li><h2>email2</h2></li>
+                </ul>
+            </div>
+            <div id="ArchiveTab" class="tabcontent">
+                <h2>email1</h2>
+                <p> insert archive content...</p>
+            </div>
+
+            <div id="AllMessage" class="messagecontent">
+                <ul>
+                    <li><h2>email1</h2></li>  
+                    <li><h2>email2</h2></li>
+                </ul>
+            </div>
+            <div id="AllTab" class="tabcontent">
+                <h2>email1</h2>
+                <p> insert all content...</p>
+            </div>
+
+            <div id="SentMessage" class="messagecontent">
+                <ul>
+                    <li><h2>email1</h2></li>  
+                    <li><h2>email2</h2></li> 
+                </ul>
+            </div>
+            <div id="SentTab" class="tabcontent">
+                <h2>email1</h2>
+                <p> insert your sent content...</p>
+            </div>
+        </div>
+    </div>
+<script>
+  // displaying content for each tab
+  function controls(evt, announcementsTab) {
+    var i, tabcontent, tablinks, messagecontent;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    messagecontent =document.getElementsByClassName("messagecontent");
+    for (i = 0; i < messagecontent.length; i++) {
+        messagecontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+        
+    } 
+    document.getElementById(announcementsTab + "Message").style.display = "block";
+    document.getElementById(announcementsTab + "Tab").style.display = "block";
+    evt.currentTarget.className += " active";
+}
+// Starting defaultOpen to the New tab 
+document.getElementById("defaultOpen").click();
+</script>
+</body>
+</html>
