@@ -1,0 +1,135 @@
+/* general styling */
+
+body{
+    font-family: Arial, sans-serif;
+    background-color: white;
+    margin: 100px;
+}
+
+.wrapper{
+    max-width: 1100px;
+    margin:15px auto;
+}
+
+/* calendar styling */
+.container-calendar{
+    background:#ffffff;
+    padding: 15px;
+    max-width: 900px;
+    margin: 0 auto;
+    overflow: auto;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content:space-between;
+    
+    
+}
+
+.button-container-calendar button{
+    cursor: pointer;
+    background: orange;
+    color: #fff;
+    border: 2px solid orange;
+    border-radius: 4px;
+    padding: 5px 10px;
+    
+}
+
+/* table styling */
+.table-calendar{
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.table-calendar td,
+.table-calendar th{
+    padding: 2%;
+    border: 1px solid #171510;
+    text-align: center;
+    vertical-align: top;
+}
+
+/* header */
+#monthAndYear{
+    text-align: center;
+    margin-top: 0;
+
+}
+
+.button-container-calendar{
+    position:inherit;
+    margin-bottom: 1em;
+    overflow: hidden;
+    clear: both;
+    width:70%;
+    margin-left:auto;
+    margin-right:auto;
+
+
+}
+
+#previous{
+    float: left;
+    
+}
+
+#next{
+    float: right;
+    
+}
+
+.footer-container-calendar{
+    padding-left: 3%;
+    
+}
+
+.footer-container-calendar select{
+    cursor: pointer;
+    background: #bdbaba;
+    color: #535252;
+    border: 1px solid #bfc5c5;
+    border-radius: 3px;
+    padding: 5px 1em;
+}
+
+#event-section{
+    padding:10px;
+    background:#ffffff;
+    margin:20px 0;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+    border:1px solid #ccc;
+    width: 50%;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+#event-section h3{
+    font-size: 18px;
+    
+}
+
+#event-section button{
+    background: orange;
+    border:none;
+    color: white;
+    padding:5px 10px;
+    cursor: pointer;
+}
+
+#event-section input[type="date"],
+#event-section input[type="text"],
+#event-section input[type="time"],
+#event-section select[id="position"],
+#event-section select[id="employee"],
+#event-section input[type="text"]{
+    margin:10px 0;
+    padding:4px;
+    width: 100%;
+    border: none;
+    background-color: #bdbaba;
+    color:#535252;
+    width:50%;
+}
+
+
+
