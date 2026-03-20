@@ -1,9 +1,13 @@
-from django.contrib import admin
-from django.urls import path
-from . import views
 
-appname = 'scheduling'
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import EmployeeViewSet, ShiftViewSet, AssignmentViewSet
+
+router = DefaultRouter()
+router.register(r'api/v1/employees', EmployeeViewSet, basename='employee')
+router.register(r'api/v1/shifts', ShiftViewSet, basename='shift')
+router.register(r'api/v1/assignments', AssignmentViewSet, basename='assignment')
 
 urlpatterns = [
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('', include(router.urls)),
 ]
