@@ -36,16 +36,13 @@ class Availability(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
+
 # Shifts
 class Shift(models.Model):
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-
 # Assignments
 class Assignment(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
