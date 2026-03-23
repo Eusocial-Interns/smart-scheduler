@@ -28,6 +28,84 @@
                 </div>
                 <div class="dates" id="dates"></div>
             </div>
+
+            <div class="jump-to">
+                <label>Jump To: </label>
+                    <select id="month">
+                        <option value=0>Jan</option>
+                        <option value=1>Feb</option>
+                        <option value=2>Mar</option>
+                        <option value=3>Apr</option>
+                        <option value=4>May</option>
+                        <option value=5>Jun</option>
+                        <option value=6>Jul</option>
+                        <option value=7>Aug</option>
+                        <option value=8>Sep</option>
+                        <option value=9>Oct</option>
+                        <option value=10>Nov</option>
+                        <option value=11>Dec</option>
+                    </select>
+                    <select id="year"></select>
+            </div>
+
+            <div class="upcoming-shifts">
+                <div class="shift-header">
+                    <h3>Upcoming Shifts</h3>
+                </div>
+                <ul class="shiftList" id="shiftList">
+                    <li>
+                        <strong>Server</strong>
+                                - Elizabeth 3/23/26 (9:30-10:30)
+                        <button class="delete-shift" >Delete</button>
+                    </li>
+                    <li>
+                        <strong>Busser</strong>
+                                - Mohammed 3/24/26 (9:30-10:30)
+                        <button class="delete-shift" >Delete</button>
+                    </li>
+                    <li>
+                        <strong>Cook</strong>
+                                - Stephen 3/25/26 (9:30-10:30)
+                        <button class="delete-shift" >Delete</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="add-shift">
+            <div class="shift-header">
+                <h3>Add Shift</h3>
+            </div>
+
+            <form class="options">
+                <label for="shiftDate">Date</label>
+                <input type="date" id="shiftDate">
+
+                <label for="startTime">Start Time</label>
+                <input type="time" id="startTime">
+
+                <label for="endTime">End Time</label>
+                <input type="time" id="endTime">
+
+                <label for="employee">Employee</label>
+                <select id="employee">
+                    <option value="">Select employee</option>
+                    <option value="0">Elizabeth</option>
+                    <option value="1">Mohammad</option>
+                    <option value="2">Stephen</option>
+                </select>
+
+                <label for="position">Position</label>
+                <select id="position">
+                    <option value="">Select position</option>
+                    <option value="0">Server</option>
+                    <option value="1">Busser</option>
+                    <option value="2">Cook</option>
+                </select>
+
+                <button type="submit" id="addShift">Add Shift</button>
+
+            </form>
         </div>
     </div>
 </body>
