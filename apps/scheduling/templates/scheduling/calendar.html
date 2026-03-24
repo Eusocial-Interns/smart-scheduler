@@ -1,9 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="./calendar.css">
+    <link rel="stylesheet" href="{% static 'scheduling/css/calendar.css' %}">
     <title>Calendar</title>
 </head>
 
@@ -63,7 +64,7 @@
         </div>
         
     </div>
-    <script src="./calendar.js"></script>
+    <script src="{% static 'scheduling/js/calendar.js' %}"></script>
 </body>
 
 </html>

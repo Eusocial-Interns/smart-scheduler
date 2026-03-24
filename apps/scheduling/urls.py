@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import EmployeeViewSet, ShiftViewSet, AssignmentViewSet
+from .views import EmployeeViewSet, ShiftViewSet, AssignmentViewSet, calendar_view
+
 
 router = DefaultRouter()
 router.register(r'api/v1/employees', EmployeeViewSet, basename='employee')
@@ -9,4 +10,5 @@ router.register(r'api/v1/assignments', AssignmentViewSet, basename='assignment')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('calendar/', calendar_view, name='calendar')
 ]
