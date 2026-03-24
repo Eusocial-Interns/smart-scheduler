@@ -1,0 +1,9 @@
+# Python 3.13
+asgiref==3.11.1
+Django==6.0.3
+django-filter==25.2
+djangorestframework==3.17.0
+Markdown==3.10.2
+psycopg==3.3.3
+psycopg-binary==3.3.3
+sqlparse==0.5.5
