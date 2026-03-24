@@ -1,11 +1,11 @@
-
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nav_Bar</title>
-    <link rel="stylesheet" href="nav_bar.css">
+    <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}">
 
 </head>
 <body>
@@ -24,9 +24,9 @@
             <!-- Navigation Links-->
             <div class="nav-links" id="nav-links">
                 <a href="#">Chat</a>
-                <a href="announcements.html">Announcements</a>
-                <a href="calendar.html">Calendar</a>
-                <a href="#">Profile</a>
+                <a href="{% url 'announcements' %}">Announcements</a>
+                <a href="{% url 'calendar' %}">Calendar</a>
+                <a href="{% url 'profile' %}">Profile</a>
             </div>
         </div>
     </nav>

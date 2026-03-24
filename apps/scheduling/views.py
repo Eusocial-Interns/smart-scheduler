@@ -33,3 +33,6 @@ def calendar_view(request):
 
 def profile_view(request):
     return render(request, 'scheduling/profile.html')
+
+def announcements_view(request):
+    return render(request, 'scheduling/announcements.html')
