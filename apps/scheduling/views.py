@@ -30,3 +30,6 @@ class AssignmentViewSet(viewsets.ModelViewSet):
 
 def calendar_view(request):
     return render(request, 'scheduling/calendar.html')
+
+def profile_view(request):
+    return render(request, 'scheduling/profile.html')
