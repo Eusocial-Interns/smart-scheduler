@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import EmployeeViewSet, ShiftViewSet, AssignmentViewSet, calendar_view, profile_view, announcements_view
+from .views import EmployeeViewSet, ShiftViewSet, AssignmentViewSet, calendar_view, profile_view, announcements_view, chat_view
 
 
 router = DefaultRouter()
@@ -13,4 +13,5 @@ urlpatterns = [
     path('calendar/', calendar_view, name='calendar'),
     path('profile/', profile_view, name='profile'),
     path('announcements/', announcements_view, name='announcements'),
+    path('chat/', chat_view, name='chat'),
 ]

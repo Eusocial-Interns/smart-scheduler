@@ -9,10 +9,14 @@
 </head>
 
 <body>
+    <!-- Nav Bar -->
+    <div id="navbar">{% include 'scheduling/nav_bar.html' %}</div>
+    <!--<script src="{% static 'scheduling/js/nav_bar.js' %}"></script>-->
+
     <div class = "wrapper">
         <h1 id="monthAndYear"></h1>
         <div class="button-container-calendar">
-                <button id="previous" onclick="previous()"> <
+                <button id="previous" onclick="previous()"> 
                 </button>
                 <button id="next" onclick="next()"> >
                 </button>

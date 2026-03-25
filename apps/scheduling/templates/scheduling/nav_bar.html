@@ -23,12 +23,20 @@
             </a>
             <!-- Navigation Links-->
             <div class="nav-links" id="nav-links">
-                <a href="#">Chat</a>
+                <a href="{% url 'chat' %}">Chat</a>
                 <a href="{% url 'announcements' %}">Announcements</a>
                 <a href="{% url 'calendar' %}">Calendar</a>
                 <a href="{% url 'profile' %}">Profile</a>
             </div>
         </div>
     </nav>
+<script>
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('nav-links');
+
+hamburger.addEventListener('click', () => {
+  navLinks.classList.toggle('active');
+});
+</script>
 </body>
 </html>

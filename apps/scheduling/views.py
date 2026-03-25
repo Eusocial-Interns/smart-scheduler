@@ -36,3 +36,6 @@ def profile_view(request):
 
 def announcements_view(request):
     return render(request, 'scheduling/announcements.html')
+
+def chat_view(request):
+    return render(request, 'scheduling/chat.html')
