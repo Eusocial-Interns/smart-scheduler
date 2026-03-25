@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from apps.scheduling.models import Employee, Shift, Assignment
 from .serializers import EmployeeSerializer, ShiftSerializer, AssignmentSerializer
-
+from django.http import HttpResponseRedirect
 
 from apps.scheduling.services.shift_service import create_shift
 from apps.scheduling.services.assignment_service import create_assignment
@@ -38,4 +38,7 @@ def announcements_view(request):
     return render(request, 'scheduling/announcements.html')
 
 def chat_view(request):
+    if request.method == 'POST':
+        message = request.POST.get('message')
+        return HttpResponseRedirect(request.path_info)
     return render(request, 'scheduling/chat.html')

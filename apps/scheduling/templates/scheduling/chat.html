@@ -39,8 +39,11 @@
                     <p>Message.</p>
                 </div>
                 <div class="messageInput">
-                    <input type="text" class="placeholder" placeholder="Type Message">
-                    <button>Send</button>
+                    <form method="POST" style="display: flex; width: 100%;">
+                        {% csrf_token %}
+                        <input type="text" name="message" class="placeholder" placeholder="Type Message">
+                        <button type="submit" class="send-button">Send</button>
+                    </form>
                 </div>
             </div>
         </div>
