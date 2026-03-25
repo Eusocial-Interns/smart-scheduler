@@ -7,6 +7,35 @@
     <title>Chat</title>
     <link rel="stylesheet" href="{% static 'scheduling/css/chat.css' %}">
 </head>
+<!--<style>
+.messageInput input {
+    font-size: 28px;
+    padding: 10px;
+    background-color: lightgray;
+    color: black;
+ }
+ .messageInput button {
+    font-size: 30px;
+    padding: 0 20px;
+    cursor: pointer;
+    background-color: #ffa31a;
+ }
+ .messageInput button:hover {
+    background-color: #fbb54c;
+    color:white;
+ }
+ @media (max-width: 768px) {
+    .messageInput {
+    margin-top: 20px;
+ }
+ .messageInput input {
+    font-size: 12px;
+ }
+ .messageInput button {
+    font-size: 12px;
+ }  
+}
+</style>-->
 <body>
 <!-- Nav Bar -->
 <div id="navbar">{% include 'scheduling/nav_bar.html' %}</div>
@@ -35,9 +64,13 @@
                 <h2>Guest</h2>
             </div>
             <div class="conversation">
-                <div class="messageReceived">
+                <div class="bubble messageReceived">
                     <p>Message.</p>
                 </div>
+                <div class="bubble messageSent">
+                    <p>Response.</p>
+                </div>
+                
                 <div class="messageInput">
                     <form method="POST" style="display: flex; width: 100%;">
                         {% csrf_token %}
