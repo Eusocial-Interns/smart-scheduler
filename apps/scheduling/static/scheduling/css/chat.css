@@ -54,6 +54,7 @@
 .conversation {
   display: block;
   margin-top: 250px;
+  gap: 10px;
 }
 .bubble {
   max-width: 75%;
@@ -64,6 +65,10 @@
 }
 .messageReceived {
    background-color: lightgray;
+   font-style: bold;
+}
+.messageSent {
+   background-color: #fbb54c;
    font-style: bold;
 }
 .messageInput {
