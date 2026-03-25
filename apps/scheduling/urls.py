@@ -10,8 +10,8 @@ router.register(r'api/v1/assignments', AssignmentViewSet, basename='assignment')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('chat/', chat_view, name='chat'),
     path('calendar/', calendar_view, name='calendar'),
     path('profile/', profile_view, name='profile'),
     path('announcements/', announcements_view, name='announcements'),
+    path('chat/', chat_view, name='chat'),
 ]
