@@ -44,10 +44,6 @@ td {
     color:rgb(195, 195, 195);    
 }
 
-.starFilled {
-   color: black; 
-}
-
 .starDetails {
     background-color: #ffa31a;
     cursor: pointer;
