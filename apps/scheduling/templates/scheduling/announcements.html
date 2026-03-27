@@ -17,55 +17,74 @@
         <div class="announcements_area">
             <!-- Tabs Create, New, Archive, All, Sent-->
                 <div class="tab">
-                    <button id="create">Create</button>  
+                    <button id="create" class="tablinks" onclick="controls(event, 'Create')">Create</button>  
                     <button id="defaultOpen" class="tablinks" onclick="controls(event, 'New')">New</button>
                     <button class="tablinks" onclick="controls(event, 'Archive')">Archive</button>
                     <button class="tablinks" onclick="controls(event, 'All')">All</button>
                     <button class="tablinks" onclick="controls(event, 'Sent')">Sent</button>
                 </div>
             <!-- Tab Content -->
+            <div id="CreateMessage" class="messagecontent">
+                <form action="submit-email" method="post">
+                    <label for="email">Email address:</label>
+                    <input type="email" id="email" name="email" required>
+                    <button type="submit">Send</button>
+                </form>
+            </div>
             <div id="NewMessage" class="messagecontent">
                 <ul>
-                    <li><h2>email1</h2></li> 
+                    <li><h2>email1<span id="toggleMessage"> > </span></h2></li> 
                     <li><h2>email2</h2></li> 
                 </ul>
             </div>
             <div id="NewTab" class="tabcontent">
-                <h2>email1</h2>
-                <p> insert new content...</p>
+                <span class="status">{{status}}</span>
+                <h1>{{title}}</h1>
+                <div class="contentBody">
+                    {{content_body}}
+                </div>
             </div>
 
             <div id="ArchiveMessage" class="messagecontent">
                 <ul>
-                    <li><h2>email1</h2></li>  
+                    <li><h2>email1<span id="toggleMessage"> > </span></h2></li>  
                     <li><h2>email2</h2></li>
                 </ul>
             </div>
             <div id="ArchiveTab" class="tabcontent">
-                <h2>email1</h2>
-                <p> insert archive content...</p>
+                <span class="status">{{status}}</span>
+                <h1>{{title}}</h1>
+                <div class="contentBody">
+                    {{content_body}}
+                </div>
             </div>
 
             <div id="AllMessage" class="messagecontent">
                 <ul>
-                    <li><h2>email1</h2></li>  
+                    <li><h2>email1<span id="toggleMessage"> > </span></h2></li>  
                     <li><h2>email2</h2></li>
                 </ul>
             </div>
             <div id="AllTab" class="tabcontent">
-                <h2>email1</h2>
-                <p> insert all content...</p>
+                <span class="status">{{status}}</span>
+                <h1>{{title}}</h1>
+                <div class="contentBody">
+                    {{content_body}}
+                </div>
             </div>
 
             <div id="SentMessage" class="messagecontent">
                 <ul>
-                    <li><h2>email1</h2></li>  
+                    <li><h2>email1<span id="toggleMessage"> > </span></h2></li>  
                     <li><h2>email2</h2></li> 
                 </ul>
             </div>
             <div id="SentTab" class="tabcontent">
-                <h2>email1</h2>
-                <p> insert your sent content...</p>
+                <span class="status">{{status}}</span>
+                <h1>{{title}}</h1>
+                <div class="contentBody">
+                    {{content_body}}
+                </div>
             </div>
         </div>
     </div>
@@ -92,6 +111,8 @@
 }
 // Starting defaultOpen to the New tab 
 document.getElementById("defaultOpen").click();
+
+//
 </script>
 </body>
 </html>

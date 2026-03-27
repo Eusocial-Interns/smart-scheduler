@@ -74,6 +74,7 @@
         width: 94%;
     }
     .tabcontent {
-     display: none !important;  
+     display: none;
+     width: auto;  
     }
 }
