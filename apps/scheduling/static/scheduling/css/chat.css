@@ -52,7 +52,8 @@
 }
 
 .conversation {
-  display: block;
+  display: flex;
+  flex-direction: column;
   margin-top: 250px;
   gap: 10px;
 }
@@ -64,10 +65,12 @@
   line-height: 1;
 }
 .messageReceived {
+   align-self: flex-start;
    background-color: lightgray;
    font-style: bold;
 }
 .messageSent {
+   align-self: flex-end;
    background-color: #fbb54c;
    font-style: bold;
 }
@@ -92,13 +95,13 @@
 }
 /* Mobile Screen */
 @media (max-width: 768px) {
-   .messageInput {
-   margin-top: 20px;
-}
-.messageInput input {
-   font-size: 14px;
-}
-.messageInput button {
-   font-size: 14px;
-}  
+      .messageInput {
+      margin-top: 20px;
+   }
+      .messageInput input {
+      font-size: 14px;
+   }
+      .messageInput button {
+      font-size: 14px;
+   }  
 }

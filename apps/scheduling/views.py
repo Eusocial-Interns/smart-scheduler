@@ -38,7 +38,4 @@ def announcements_view(request):
     return render(request, 'scheduling/announcements.html')
 
 def chat_view(request):
-    if request.method == 'POST':
-        message = request.POST.get('message')
-        return HttpResponseRedirect(request.path_info)
     return render(request, 'scheduling/chat.html')

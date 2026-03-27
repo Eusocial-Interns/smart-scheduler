@@ -14,8 +14,8 @@
 .avatar {
    display: inline;
    padding: 20px;
-   width: 60px;
-   height: 60px;
+   width: 80px;
+   height: 80px;
    background-color: lightgray;
    color: white;
    font-size: 24px;
@@ -28,15 +28,15 @@ table {
 
 th {
     background-color: #ffa31a;
-    justify-items: start;
+    text-align: start;
 }
 
 td {
+    height: 30px;
     border-bottom: 1px solid #ffa31a;
 }
 
- .placeholder::placeholder {
-    width: fit-content;
+.placeholder::placeholder {
     font-size: 13px;
 }
 
