@@ -51,4 +51,20 @@ nextBtn.addEventListener('click', () => {
 	updateCalendar();
 })
 
+fetch ("/api/v1/shifts")
+	.then(res => res.json())
+	.then(data => console.log(data))
+	.catch(error => console.error('Error: ', error));
+
+fetch("/api/v1/employees")
+	.then(res => res.json())
+	.then(data => console.log(data))
+	.catch(error => console.error('Error: ', error));
+
+fetch("/api/v1/assignments")
+	.then(res => res.json())
+	.then(data => console.log(data))
+	.catch(error => console.error('Error: ', error));
+
+
 updateCalendar();
