@@ -67,6 +67,7 @@ const fetchShifts = async () => {
 
         shifts = await Promise.all(shiftPromises);
         renderShifts();
+		renderUpcomingShifts();
     } catch (error) {
         console.error(error);
         setError('Failed to load shifts.');
@@ -277,6 +278,60 @@ const renderShifts = () => {
 
 // -------------------------
 
+const shiftListElement = document.getElementById('shiftList');
+
+const renderUpcomingShifts = () => {
+    // Clear existing list
+    shiftListElement.innerHTML = '';
+
+    // Sort shifts by start date
+    const upcomingShifts = shifts
+        .filter(shift => shift.start >= new Date()) // future shifts only
+        .sort((a, b) => a.start - b.start);
+
+    if (upcomingShifts.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'No upcoming shifts';
+        shiftListElement.appendChild(li);
+        return;
+    }
+
+    upcomingShifts.forEach(shift => {
+        const li = document.createElement('li');
+
+        const employeeName = employeeMap[shift.employeeId] || `Employee ${shift.employeeId}`;
+        const role = shift.role || 'General';
+
+        const start = shift.start;
+        const end = shift.end;
+
+        const startHours = String(start.getHours()).padStart(2, '0');
+        const startMinutes = String(start.getMinutes()).padStart(2, '0');
+        const endHours = String(end.getHours()).padStart(2, '0');
+        const endMinutes = String(end.getMinutes()).padStart(2, '0');
+
+        const dateStr = `${start.getMonth() + 1}/${start.getDate()}/${start.getFullYear()}`;
+        const timeStr = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
+
+        li.innerHTML = `
+            <strong>${role}</strong> - ${employeeName} ${dateStr} (${timeStr})
+            <button class="delete-shift">Delete</button>
+        `;
+
+        // Add delete functionality
+        li.querySelector('.delete-shift').addEventListener('click', () => {
+            // Remove shift from array
+            shifts = shifts.filter(s => s.shiftId !== shift.shiftId);
+            renderUpcomingShifts();
+            renderShifts(); // update calendar view
+        });
+
+        shiftListElement.appendChild(li);
+    });
+};
+
+// -------------------------
+
 prevBtn.addEventListener('click', () => {
     changeDate(-1);
 });
@@ -289,3 +344,37 @@ nextBtn.addEventListener('click', () => {
 
 fetchEmployees();
 updateCalendar();
+
+// -------------------------
+
+fetchEmployees();
+updateCalendar();
+
+// -------------------------
+
+document.getElementById('addShift').addEventListener('click', e => {
+    e.preventDefault();
+
+    const dateInput = document.getElementById('shiftDate').value;
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+    const employeeId = parseInt(document.getElementById('employee').value);
+    const role = document.getElementById('position').value;
+
+    if (!dateInput || !startTime || !endTime || isNaN(employeeId)) return;
+
+    const start = new Date(`${dateInput}T${startTime}`);
+    const end = new Date(`${dateInput}T${endTime}`);
+
+    const newShift = {
+        shiftId: Date.now(), // temporary unique ID
+        employeeId,
+        role,
+        start,
+        end
+    };
+
+    shifts.push(newShift);
+    renderShifts();
+    renderUpcomingShifts();
+});
