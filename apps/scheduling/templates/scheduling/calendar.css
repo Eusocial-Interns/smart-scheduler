@@ -186,6 +186,15 @@ body {
     color: #fff;
 }
 
+.shift-card {
+    background-color: #4CAF50;
+    color: white;
+    font-size: 0.7rem;
+    margin-top: 2px;
+    padding: 2px;
+    border-radius: 3px;
+}
+
 /* Tablet mode */
 @media (max-width: 1024px) {
     .left-panel {
