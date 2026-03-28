@@ -347,34 +347,63 @@ updateCalendar();
 
 // -------------------------
 
-fetchEmployees();
-updateCalendar();
-
-// -------------------------
-
-document.getElementById('addShift').addEventListener('click', e => {
+document.getElementById('addShift').addEventListener('click', async e => {
     e.preventDefault();
 
     const dateInput = document.getElementById('shiftDate').value;
     const startTime = document.getElementById('startTime').value;
     const endTime = document.getElementById('endTime').value;
     const employeeId = parseInt(document.getElementById('employee').value);
-    const role = document.getElementById('position').value;
+    const role = document.getElementById('position').selectedOptions[0].text;
 
-    if (!dateInput || !startTime || !endTime || isNaN(employeeId)) return;
+    // Basic validation
+    if (!dateInput || !startTime || !endTime || isNaN(employeeId) || !role) {
+        alert('Please fill in all required fields.');
+        return;
+    }
 
-    const start = new Date(`${dateInput}T${startTime}`);
-    const end = new Date(`${dateInput}T${endTime}`);
+    const start = `${dateInput}T${startTime}`;
+    const end = `${dateInput}T${endTime}`;
 
-    const newShift = {
-        shiftId: Date.now(), // temporary unique ID
-        employeeId,
-        role,
-        start,
-        end
-    };
+    try {
+        const res = await fetch('/api/v1/shifts/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                employee: employeeId,
+                role,
+                start_time: start,
+                end_time: end
+            })
+        });
 
-    shifts.push(newShift);
-    renderShifts();
-    renderUpcomingShifts();
+        if (!res.ok) throw new Error('Failed to create shift');
+
+        const newShift = await res.json();
+
+        // Update local state
+        shifts.push({
+            shiftId: newShift.id,
+            employeeId: newShift.employee,
+            role: newShift.role,
+            start: new Date(newShift.start_time),
+            end: new Date(newShift.end_time)
+        });
+
+        renderShifts();
+        renderUpcomingShifts();
+
+        // Reset form
+        document.getElementById('shiftDate').value = '';
+        document.getElementById('startTime').value = '';
+        document.getElementById('endTime').value = '';
+        document.getElementById('employee').value = '';
+        document.getElementById('position').value = '';
+
+    } catch (error) {
+        console.error(error);
+        alert('Error creating shift. Please try again.');
+    }
 });
