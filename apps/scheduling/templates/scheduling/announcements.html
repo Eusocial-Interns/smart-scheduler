@@ -33,8 +33,7 @@
             </div>
             <div id="NewMessage" class="messagecontent">
                 <ul>
-                    <li><h2>email1<span id="toggleMessage"> > </span></h2></li> 
-                    <li><h2>email2</h2></li> 
+                    <li><button class="emailBtn">email1</button></li> 
                 </ul>
             </div>
             <div id="NewTab" class="tabcontent">
@@ -47,8 +46,7 @@
 
             <div id="ArchiveMessage" class="messagecontent">
                 <ul>
-                    <li><h2>email1<span id="toggleMessage"> > </span></h2></li>  
-                    <li><h2>email2</h2></li>
+                    <li><button class="emailBtn">email1</button></li> 
                 </ul>
             </div>
             <div id="ArchiveTab" class="tabcontent">
@@ -61,8 +59,7 @@
 
             <div id="AllMessage" class="messagecontent">
                 <ul>
-                    <li><h2>email1<span id="toggleMessage"> > </span></h2></li>  
-                    <li><h2>email2</h2></li>
+                    <li><button class="emailBtn">email1</button></li> 
                 </ul>
             </div>
             <div id="AllTab" class="tabcontent">
@@ -75,8 +72,7 @@
 
             <div id="SentMessage" class="messagecontent">
                 <ul>
-                    <li><h2>email1<span id="toggleMessage"> > </span></h2></li>  
-                    <li><h2>email2</h2></li> 
+                    <li><button class="emailBtn">email1</button></li>  
                 </ul>
             </div>
             <div id="SentTab" class="tabcontent">
@@ -113,6 +109,41 @@
 document.getElementById("defaultOpen").click();
 
 //
+const emails = document.getElementsByClassName("emailBtn");
+
+  for (let i = 0; i < emails.length; i++) {
+    emails[i].addEventListener("click", function () {
+
+      if (window.innerWidth <= 768) {
+
+        // find the CURRENT visible tabcontent
+        const visibleContent = document.querySelector(".tabcontent[style*='block']");
+
+        const isOpen = visibleContent && visibleContent.style.display === "block";
+
+        // 🔁 Reset all tabcontent + buttons
+        const allContents = document.getElementsByClassName("tabcontent");
+        for (let j = 0; j < allContents.length; j++) {
+          allContents[j].style.display = "none";
+        }
+
+        for (let j = 0; j < emails.length; j++) {
+          emails[j].classList.remove("active");
+        }
+
+        // ✅ Toggle open/close
+        if (!isOpen) {
+          // get the parent section (New, Archive, etc.)
+          const parent = this.closest(".messagecontent");
+          const tabId = parent.id.replace("Message", "Tab");
+          const target = document.getElementById(tabId);
+
+          target.style.display = "block";
+          this.classList.add("active");
+        }
+      }
+    });
+  }
 </script>
 </body>
 </html>

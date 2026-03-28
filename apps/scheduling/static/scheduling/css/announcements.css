@@ -45,10 +45,20 @@
     
 }
 
-.messagecontent h2{
+.emailBtn {
+    border: none;
+    background-color: white;
+    cursor: pointer;
+    font-size: 20px;
     padding: 5px;
-    margin-top: 0px;
-    
+    margin-top: 0px;  
+}
+.emailBtn:hover {
+    background-color: rgb(225, 225, 225);
+}
+
+.emailBtn.active {
+    background-color: rgb(225, 225, 225);
 }
 
 .tabcontent {
