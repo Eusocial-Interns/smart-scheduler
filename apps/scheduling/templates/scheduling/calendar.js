@@ -4,6 +4,7 @@ const monthYearElement = document.getElementById('monthYear');
 const datesElement = document.getElementById('dates');
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
+const viewButtons = document.querySelectorAll('[data-view]');
 
 // -------------------------
 
@@ -72,10 +73,8 @@ const fetchShifts = async () => {
 
 // -------------------------
 
-const updateCalendar = () => {
-	if(!datesElement) return;
-
-    const currentYear = calendarState.currentDate.getFullYear();
+const renderMonthView = () => {
+	const currentYear = calendarState.currentDate.getFullYear();
     const currentMonth = calendarState.currentDate.getMonth();
 
     const firstDay = new Date(currentYear, currentMonth, 1);
@@ -109,13 +108,100 @@ const updateCalendar = () => {
 
     datesElement.innerHTML = datesHTML;
 
-	if (shift.length > 0){
+	if (shifts.length > 0){
 		renderShifts();
 	}
 
-    
-    renderShifts();
+}
+
+// -------------------------
+
+const renderWeekView = () => {
+    datesElement.innerHTML = '<div class="placeholder">Week view coming soon</div>';
 };
+
+// -------------------------
+
+const renderDayView = () => {
+    datesElement.innerHTML = '<div class="placeholder">Day view coming soon</div>';
+};
+
+// -------------------------
+
+const updateCalendar = () => {
+
+	if(!datesElement) return;
+
+	switch (calendarState.view) {
+        case 'month':
+            renderMonthView();
+            break;
+        case 'week':
+            renderWeekView();
+            break;
+        case 'day':
+            renderDayView();
+            break;
+        default:
+            renderMonthView();
+    }
+
+	updateHeader();
+
+};
+
+// -------------------------
+
+const updateHeader = () => {
+    const date = calendarState.currentDate;
+
+    if (calendarState.view === 'month') {
+        monthYearElement.textContent = date.toLocaleString('default', {
+            month: 'long',
+            year: 'numeric'
+        });
+    } else if (calendarState.view === 'week') {
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - startOfWeek.getDay());
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+        monthYearElement.textContent =
+            `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
+    } else {
+        monthYearElement.textContent = date.toDateString();
+    }
+};
+
+// -------------------------
+
+const changeDate = (direction) => {
+    const date = calendarState.currentDate;
+
+    switch (calendarState.view) {
+        case 'month':
+            date.setMonth(date.getMonth() + direction);
+            break;
+        case 'week':
+            date.setDate(date.getDate() + (7 * direction));
+            break;
+        case 'day':
+            date.setDate(date.getDate() + direction);
+            break;
+    }
+
+    updateCalendar();
+};
+
+// -------------------------
+
+viewButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        calendarState.view = btn.dataset.view;
+        updateCalendar();
+    });
+});
 
 // -------------------------
 
@@ -168,20 +254,14 @@ const renderShifts = () => {
 // -------------------------
 
 prevBtn.addEventListener('click', () => {
-	setLoading(true);
-    calendarState.currentDate.setMonth(calendarState.currentDate.getMonth() - 1);
-    updateCalendar();
-	setLoading(false);
+    changeDate(-1);
 });
 
 nextBtn.addEventListener('click', () => {
-	setLoading(true);
-    calendarState.currentDate.setMonth(calendarState.currentDate.getMonth() + 1);
-    updateCalendar();
-	setLoading(false);
+    changeDate(1);
 });
 
 // -------------------------
 
-updateCalendar();
 fetchEmployees();
+updateCalendar();
