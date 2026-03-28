@@ -14,7 +14,7 @@
 .listPanel {
    border: 1px solid;
    width: 85%;
-   height: 100%;    
+   align-items: stretch;    
 }
 .listPanel input {
    font-size: 25px;
