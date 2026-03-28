@@ -187,12 +187,45 @@ body {
 }
 
 .shift-card {
-    background-color: #4CAF50;
+    background: #4CAF50;
     color: white;
     font-size: 0.7rem;
     margin-top: 2px;
-    padding: 2px;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.shift-role {
+    font-weight: bold;
+}
+
+.shift-employee {
+    font-size: 0.65rem;
+}
+
+.shift-time {
+    font-size: 0.65rem;
+}
+
+.shift-status {
+    font-size: 0.6rem;
+    margin-top: 2px;
+    padding: 1px 3px;
     border-radius: 3px;
+    display: inline-block;
+}
+
+/* Status variations */
+.shift-status.assigned {
+    background: #2e7d32;
+}
+
+.shift-status.open {
+    background: #f9a825;
+}
+
+.shift-status.pending {
+    background: #1565c0;
 }
 
 /* Tablet mode */

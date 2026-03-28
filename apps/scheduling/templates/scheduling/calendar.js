@@ -56,11 +56,13 @@ const fetchShifts = async () => {
             const shiftRes = await fetch(`/api/v1/shifts/${assignment.shift}/`);
             const shift = await shiftRes.json();
             return {
-                employeeId: assignment.employee,
-                shiftId: assignment.shift,
-                start: new Date(shift.start_time),
-                end: new Date(shift.end_time)
-            };
+    			employeeId: assignment.employee,
+    			shiftId: assignment.shift,
+    			start: new Date(shift.start_time),
+    			end: new Date(shift.end_time),
+    			role: 'General',      // placeholder 
+    			status: 'Assigned'    // placeholder status
+			};
         });
 
         shifts = await Promise.all(shiftPromises);
@@ -108,9 +110,9 @@ const renderMonthView = () => {
 
     datesElement.innerHTML = datesHTML;
 
-	if (shifts.length > 0){
-		renderShifts();
-	}
+	
+	renderShifts();
+	
 
 }
 
@@ -205,6 +207,38 @@ viewButtons.forEach(btn => {
 
 // -------------------------
 
+const createShiftCard = (shift) => {
+    const shiftDiv = document.createElement('div');
+    shiftDiv.className = 'shift-card';
+
+    const employeeName = employeeMap[shift.employeeId] || `Employee ${shift.employeeId}`;
+
+    const start = shift.start;
+    const end = shift.end;
+
+    const startHours = String(start.getHours()).padStart(2, '0');
+    const startMinutes = String(start.getMinutes()).padStart(2, '0');
+    const endHours = String(end.getHours()).padStart(2, '0');
+    const endMinutes = String(end.getMinutes()).padStart(2, '0');
+
+    const timeRange = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
+
+    // Placeholder role + status (until backend supports it)
+    const role = shift.role || 'General';
+    const status = shift.status || 'Assigned';
+
+    shiftDiv.innerHTML = `
+        <div class="shift-role">${role}</div>
+        <div class="shift-employee">${employeeName}</div>
+        <div class="shift-time">${timeRange}</div>
+        <div class="shift-status ${status.toLowerCase()}">${status}</div>
+    `;
+
+    return shiftDiv;
+};
+
+// -------------------------
+
 const renderShifts = () => {
     const dateElements = document.querySelectorAll('#dates .date');
 
@@ -223,18 +257,8 @@ const renderShifts = () => {
         if (shiftMonth === calendarState.currentDate.getMonth() && shiftYear === calendarState.currentDate.getFullYear()) {
             dateElements.forEach(el => {
                 if (+el.textContent === shiftDay && !el.classList.contains('inactive')) {
-                    const shiftDiv = document.createElement('div');
-                    shiftDiv.className = 'shift-card';
-
-                    const startHours = String(shiftDate.getHours()).padStart(2, '0');
-                    const startMinutes = String(shiftDate.getMinutes()).padStart(2, '0');
-                    const endHours = String(shift.end.getHours()).padStart(2, '0');
-                    const endMinutes = String(shift.end.getMinutes()).padStart(2, '0');
-
-                    const employeeName = employeeMap[shift.employeeId] || `Employee ${shift.employeeId}`;
-
-                    shiftDiv.textContent = `${employeeName} (${startHours}:${startMinutes}-${endHours}:${endMinutes})`;
-                    el.appendChild(shiftDiv);
+                    const shiftDiv = createShiftCard(shift);
+					el.appendChild(shiftDiv);
                 }
             });
         }
