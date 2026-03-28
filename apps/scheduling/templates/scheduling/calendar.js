@@ -212,7 +212,9 @@ const createShiftCard = (shift) => {
     const shiftDiv = document.createElement('div');
     shiftDiv.className = 'shift-card';
 
-    const employeeName = employeeMap[shift.employeeId] || `Employee ${shift.employeeId}`;
+    const employeeName = shift.employeeId !== null 
+        ? (employeeMap[shift.employeeId] || `Employee ${shift.employeeId}`)
+        : 'Open Shift';
 
     const start = shift.start;
     const end = shift.end;
@@ -221,12 +223,10 @@ const createShiftCard = (shift) => {
     const startMinutes = String(start.getMinutes()).padStart(2, '0');
     const endHours = String(end.getHours()).padStart(2, '0');
     const endMinutes = String(end.getMinutes()).padStart(2, '0');
-
     const timeRange = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
 
-    // Placeholder role + status (until backend supports it)
-    const role = shift.role || 'General';
-    const status = shift.status || 'Assigned';
+    
+    const status = shift.employeeId !== null ? 'Assigned' : 'Open';
 
     shiftDiv.innerHTML = `
         <div class="shift-role">${role}</div>
@@ -234,6 +234,8 @@ const createShiftCard = (shift) => {
         <div class="shift-time">${timeRange}</div>
         <div class="shift-status ${status.toLowerCase()}">${status}</div>
     `;
+
+    shiftDiv.classList.add(status.toLowerCase());
 
     return shiftDiv;
 };
@@ -281,10 +283,9 @@ const renderShifts = () => {
 const shiftListElement = document.getElementById('shiftList');
 
 const renderUpcomingShifts = () => {
-    // Clear existing list
+
     shiftListElement.innerHTML = '';
 
-    // Sort shifts by start date
     const upcomingShifts = shifts
         .filter(shift => shift.start >= new Date()) // future shifts only
         .sort((a, b) => a.start - b.start);
@@ -320,10 +321,10 @@ const renderUpcomingShifts = () => {
 
         // Add delete functionality
         li.querySelector('.delete-shift').addEventListener('click', () => {
-            // Remove shift from array
+            
             shifts = shifts.filter(s => s.shiftId !== shift.shiftId);
             renderUpcomingShifts();
-            renderShifts(); // update calendar view
+            renderShifts(); 
         });
 
         shiftListElement.appendChild(li);
@@ -347,13 +348,6 @@ updateCalendar();
 
 // -------------------------
 
-// -------------------------
-// Existing fetchEmployees + calendar init
-fetchEmployees();
-updateCalendar();
-
-// -------------------------
-// Add Shift button handler
 document.getElementById('addShift').addEventListener('click', async e => {
     e.preventDefault();
 
@@ -392,12 +386,12 @@ document.getElementById('addShift').addEventListener('click', async e => {
 
         shifts.push({
             shiftId: newShift.id,
-            employeeId: newShift.employee,
+            employeeId: newShift.employee || null, 
             role: newShift.role,
             start: new Date(newShift.start_time),
-            end: new Date(newShift.end_time)
-        });
-
+            end: new Date(newShift.end_time),
+            status: newShift.employee ? 'Assigned' : 'Open'
+});
         renderUpcomingShifts();
         updateCalendar();
 

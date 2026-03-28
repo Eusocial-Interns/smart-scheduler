@@ -215,13 +215,15 @@ body {
     display: inline-block;
 }
 
-/* Status variations */
-.shift-status.assigned {
-    background: #2e7d32;
+
+.shift-card.assigned {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
 }
 
-.shift-status.open {
-    background: #f9a825;
+.shift-card.open {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
 }
 
 .shift-status.pending {
