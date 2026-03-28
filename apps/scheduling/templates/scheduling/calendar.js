@@ -347,6 +347,13 @@ updateCalendar();
 
 // -------------------------
 
+// -------------------------
+// Existing fetchEmployees + calendar init
+fetchEmployees();
+updateCalendar();
+
+// -------------------------
+// Add Shift button handler
 document.getElementById('addShift').addEventListener('click', async e => {
     e.preventDefault();
 
@@ -354,7 +361,7 @@ document.getElementById('addShift').addEventListener('click', async e => {
     const startTime = document.getElementById('startTime').value;
     const endTime = document.getElementById('endTime').value;
     const employeeId = parseInt(document.getElementById('employee').value);
-    const role = document.getElementById('position').selectedOptions[0].text;
+    const role = document.getElementById('position').value;
 
     // Basic validation
     if (!dateInput || !startTime || !endTime || isNaN(employeeId) || !role) {
@@ -383,7 +390,6 @@ document.getElementById('addShift').addEventListener('click', async e => {
 
         const newShift = await res.json();
 
-        // Update local state
         shifts.push({
             shiftId: newShift.id,
             employeeId: newShift.employee,
@@ -392,16 +398,19 @@ document.getElementById('addShift').addEventListener('click', async e => {
             end: new Date(newShift.end_time)
         });
 
-        renderShifts();
         renderUpcomingShifts();
+        updateCalendar();
 
-        // Reset form
+        const addShiftModal = document.getElementById('addShiftModal');
+        if (addShiftModal) addShiftModal.style.display = 'none';
+
         document.getElementById('shiftDate').value = '';
         document.getElementById('startTime').value = '';
         document.getElementById('endTime').value = '';
         document.getElementById('employee').value = '';
         document.getElementById('position').value = '';
 
+        alert('Shift added successfully!');
     } catch (error) {
         console.error(error);
         alert('Error creating shift. Please try again.');
