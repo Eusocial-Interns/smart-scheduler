@@ -7,7 +7,10 @@ const nextBtn = document.getElementById('nextBtn');
 
 // -------------------------
 
-let currentDate = new Date();
+const calendarState = {
+    currentDate: new Date(),
+    view: 'month' // future-proof (month, week, day)
+};
 let shifts = [];
 let employeeMap = {};
 
@@ -70,16 +73,18 @@ const fetchShifts = async () => {
 // -------------------------
 
 const updateCalendar = () => {
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth();
+	if(!datesElement) return;
+
+    const currentYear = calendarState.currentDate.getFullYear();
+    const currentMonth = calendarState.currentDate.getMonth();
 
     const firstDay = new Date(currentYear, currentMonth, 1);
     const lastDay = new Date(currentYear, currentMonth + 1, 0);
     const totalDays = lastDay.getDate();
-    const firstDayIndex = firstDay.getDay();
-    const lastDayIndex = lastDay.getDay();
+    const firstDayIndex = (firstDay.getDay() + 6) % 7;
+    const lastDayIndex = (lastDay.getDay() + 6) % 7;
 
-    monthYearElement.textContent = currentDate.toLocaleString('default', {month: 'long', year: 'numeric'});
+    monthYearElement.textContent = calendarState.currentDate.toLocaleString('default', {month: 'long', year: 'numeric'});
 
     let datesHTML = '';
 
@@ -104,6 +109,10 @@ const updateCalendar = () => {
 
     datesElement.innerHTML = datesHTML;
 
+	if (shift.length > 0){
+		renderShifts();
+	}
+
     
     renderShifts();
 };
@@ -125,7 +134,7 @@ const renderShifts = () => {
         const shiftMonth = shiftDate.getMonth();
         const shiftYear = shiftDate.getFullYear();
 
-        if (shiftMonth === currentDate.getMonth() && shiftYear === currentDate.getFullYear()) {
+        if (shiftMonth === calendarState.currentDate.getMonth() && shiftYear === calendarState.currentDate.getFullYear()) {
             dateElements.forEach(el => {
                 if (+el.textContent === shiftDay && !el.classList.contains('inactive')) {
                     const shiftDiv = document.createElement('div');
@@ -159,13 +168,17 @@ const renderShifts = () => {
 // -------------------------
 
 prevBtn.addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() - 1);
+	setLoading(true);
+    calendarState.currentDate.setMonth(calendarState.currentDate.getMonth() - 1);
     updateCalendar();
+	setLoading(false);
 });
 
 nextBtn.addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() + 1);
+	setLoading(true);
+    calendarState.currentDate.setMonth(calendarState.currentDate.getMonth() + 1);
     updateCalendar();
+	setLoading(false);
 });
 
 // -------------------------
