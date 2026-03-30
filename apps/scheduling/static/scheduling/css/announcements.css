@@ -62,6 +62,7 @@
 }
 
 .tabcontent {
+    display: none;
     background-color: white;
     border-style: solid;
     padding: 25px;
