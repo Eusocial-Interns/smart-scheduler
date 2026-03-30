@@ -1,11 +1,9 @@
 .content {
    display: flex;
    flex-direction: column;
+   margin-top: 10px;
 }
 
-.content h1 {
-   align-self: center;
-}
 .conversationList {
    display: flex;
    flex-direction: row;

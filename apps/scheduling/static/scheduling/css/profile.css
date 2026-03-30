@@ -1,10 +1,7 @@
 .content {
     display: flex;
     flex-direction: column;
-}
-
-.content h1 {
-    align-self: center;
+    margin-top: 10px;
 }
 
 .profile {
