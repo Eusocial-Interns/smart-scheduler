@@ -14,11 +14,12 @@
 .listPanel {
    border: 1px solid;
    width: 85%;
-   align-items: stretch;    
+   height: auto;    
 }
 .listPanel input {
    font-size: 25px;
    margin: 5px;
+
 }
 .messageContent {
    display: flex;
