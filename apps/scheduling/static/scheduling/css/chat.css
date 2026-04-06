@@ -1,11 +1,9 @@
 .content {
    display: flex;
    flex-direction: column;
+   margin-top: 10px;
 }
 
-.content h1 {
-   align-self: center;
-}
 .conversationList {
    display: flex;
    flex-direction: row;
@@ -14,12 +12,11 @@
 .listPanel {
    border: 1px solid;
    width: 85%;
-   height: auto;    
+   height: 100%;    
 }
 .listPanel input {
    font-size: 25px;
    margin: 5px;
-
 }
 .messageContent {
    display: flex;

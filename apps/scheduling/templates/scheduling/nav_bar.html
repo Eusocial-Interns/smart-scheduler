@@ -14,6 +14,19 @@
         <div class="logo">
             <h1><span class="#" style="color: white;">eu</span> Social</h1>
         </div>
+        <div class="mobile_title">
+            {% if request.resolver_match.url_name == 'chat' %}
+                <h1>Chat</h1>
+            {% elif request.resolver_match.url_name == 'announcements' %}
+                <h1>Announcements</h1>
+            {% elif request.resolver_match.url_name == 'calendar' %}
+                <h1>Calendar</h1>
+            {% elif request.resolver_match.url_name == 'profile' %} 
+                <h1>Profile</h1>
+            {% else %}
+            <h1>General Page</h1>
+            {% endif %}
+        </div>
         <div class="wrap">    
             <!-- Hambuger -->
             <a href="#" class="hamburger" id="hamburger">
