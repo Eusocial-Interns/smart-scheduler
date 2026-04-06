@@ -14,7 +14,20 @@
         <div class="logo">
             <h1><span class="#" style="color: white;">eu</span> Social</h1>
         </div>
-        <div class="wrap">
+        <div class="mobile_title">
+            {% if request.resolver_match.url_name == 'chat' %}
+                <h1>Chat</h1>
+            {% elif request.resolver_match.url_name == 'announcements' %}
+                <h1>Announcements</h1>
+            {% elif request.resolver_match.url_name == 'calendar' %}
+                <h1>Calendar</h1>
+            {% elif request.resolver_match.url_name == 'profile' %} 
+                <h1>Profile</h1>
+            {% else %}
+            <h1>General Page</h1>
+            {% endif %}
+        </div>
+        <div class="wrap">    
             <!-- Hambuger -->
             <a href="#" class="hamburger" id="hamburger">
                 <span class="bar"></span>
@@ -30,12 +43,18 @@
             </div>
         </div>
     </nav>
+    
 <script>
 const hamburger = document.getElementById('hamburger');
 const navLinks = document.getElementById('nav-links');
 
 hamburger.addEventListener('click', () => {
   navLinks.classList.toggle('active');
+});
+document.querySelectorAll('nav a').forEach (link => {
+    if (link.href === window.location.href) {
+    link.classList.add('active');
+  }  
 });
 </script>
 </body>
