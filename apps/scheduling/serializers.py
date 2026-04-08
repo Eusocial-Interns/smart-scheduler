@@ -1,10 +1,16 @@
 from rest_framework import serializers
-from apps.scheduling.models import Employee, Shift, Assignment
+from apps.scheduling.models import Employee, Shift, Assignment, Availability
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
+        fields = "__all__"
+
+
+class AvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Availability
         fields = "__all__"
 
 
