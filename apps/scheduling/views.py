@@ -1,3 +1,4 @@
+from apps.scheduling.services.availability_service import create_availability
 from django.shortcuts import render
 from rest_framework import viewsets
 
@@ -18,9 +19,6 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     serializer_class = EmployeeSerializer
 
 
-class AvailabilityViewSet(viewsets.ModelViewSet):
-    queryset = Availability.objects.all()
-    serializer_class = AvailabilitySerializer
 
 
 class ShiftViewSet(viewsets.ModelViewSet):
@@ -31,12 +29,15 @@ class ShiftViewSet(viewsets.ModelViewSet):
         create_shift(serializer.validated_data)
 
 
-class AssignmentViewSet(viewsets.ModelViewSet):
-    queryset = Assignment.objects.all()
-    serializer_class = AssignmentSerializer
+class AvailabilityViewSet(viewsets.ModelViewSet):
+    queryset = Availability.objects.all()
+    serializer_class = AvailabilitySerializer
 
     def perform_create(self, serializer):
-        create_assignment(serializer.validated_data)
+        create_availability(serializer.validated_data)
+
+
+
 
 
 # keep these (frontend views)
