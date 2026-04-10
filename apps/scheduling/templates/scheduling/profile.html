@@ -1,65 +1,51 @@
+{% extends 'scheduling/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile</title>
-    <link rel="stylesheet" href="{% static 'scheduling/css/profile.css' %}">
-</head>
-<body>
-    <!-- Nav Bar -->
-    <div id="navbar">{% include 'scheduling/nav_bar.html' %}</div>
-    <!--<script src="{% static 'scheduling/js/nav_bar.js' %}"></script>-->
-    <!-- Profile Content-->
-    <div class="content">
-        <div class="profile">
-            <header>
-                <div class="avatar">
-                    G
-                </div>
-                <h2>Guest</h2>
-            </header>
+
+{% block title %}Profile{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'scheduling/css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="profile-page">
+    <div class="profile-hero page-card">
+        <div class="profile-hero__identity">
+            <div class="profile-avatar">G</div>
+            <div>
+                <p class="section-eyebrow">Employee Snapshot</p>
+                <h1 class="section-title">Guest Team Member</h1>
+                <p class="section-copy">A polished shell for future employee profile data, ratings, and personal contact details.</p>
+            </div>
         </div>
-        <div class="profileInfo">
-            <table>
-                <tr>
-                <th><h2>Profile Information</h2></th>
-                <th></th>
-                </tr>
-                <tr>
-                    <td>Employee ID:</td>
-                    <td><input type="text" class="placeholder" placeholder="000000"></td>
-                </tr>
-                <tr>
-                    <td>Home Phone:</td>
-                    <td><input type="text" class="placeholder" placeholder="734-000-000"></td>
-                </tr>
-                <tr>
-                    <td>Mobile Phone:</td>
-                    <td><input type="text" class="placeholder" placeholder="734-000-000"></td>
-                </tr>
-                <tr>    
-                    <td>Primary Address:</td>
-                    <td><input type="text" class="placeholder" placeholder="address city street st zip"></td>
-                </tr>
-                <tr>    
-                    <td>Secondary Address:</td>
-                    <td><input type="text" class="placeholder" placeholder="address city street st zip"></td>
-                </tr>
-                <tr>  
-                    <td>Star Rating:</td>
-                    <td><div class="starRating">
-                        <span class="star">&#9733;</span>
-                        <span class="star">&#9733;</span>
-                        <span class="star">&#9733;</span>
-                        <span class="star">&#9733;</span>
-                        <span class="star">&#9733;</span>
-                    </div></td>
-                </tr>   
-            </table>
-            <button type="button" class="starDetails">View Star Rating Details</button>
+        <div class="profile-hero__badges">
+            <span class="pill">Front of House</span>
+            <span class="pill">5 star rating</span>
         </div>
     </div>
-</body>
-</html>
+
+    <div class="profile-grid">
+        <section class="page-card profile-section">
+            <p class="section-eyebrow">Profile Information</p>
+            <div class="profile-info-grid">
+                <div><span>Employee ID</span><strong>000000</strong></div>
+                <div><span>Primary Phone</span><strong>734-000-0000</strong></div>
+                <div><span>Mobile Phone</span><strong>734-000-0000</strong></div>
+                <div><span>Primary Address</span><strong>123 Main Street, Detroit, MI</strong></div>
+                <div><span>Secondary Address</span><strong>Apartment / Suite details</strong></div>
+                <div><span>Emergency Contact</span><strong>On file</strong></div>
+            </div>
+        </section>
+
+        <section class="page-card profile-section">
+            <p class="section-eyebrow">Recognition</p>
+            <div class="rating-card">
+                <div class="rating-card__stars" aria-label="5 out of 5 stars">★★★★★</div>
+                <h2>Star Rating Details</h2>
+                <p class="section-copy">This section is ready for dynamic performance notes, review history, and role-based achievements.</p>
+                <button class="button-primary" type="button">View Rating Breakdown</button>
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}

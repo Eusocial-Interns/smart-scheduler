@@ -1,56 +1,61 @@
+{% extends 'scheduling/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat</title>
-    <link rel="stylesheet" href="{% static 'scheduling/css/chat.css' %}">
-</head>
-<body>
-<!-- Nav Bar -->
-<div id="navbar">{% include 'scheduling/nav_bar.html' %}</div>
-<!--<script src="{% static 'scheduling/js/navbar.js' %}"></script>-->
-<!-- Chat Content-->
-<div class="content">
-    <div class="conversationList">
-        <div class="listPanel">
-            <input type="text" class="placeholder" placeholder="Search">
-            <div class="messageContent">
-                <div class="avatar">
-                    G
-                </div>
-                <div class="message">
-                    <h2>Guest</h2>
-                    <p>Message.</p>
-                </div>
-            </div>  
-        </div>
-        <div class="messagePanel">
-            <div class="currentAvatar">
-                <div class="avatar">
-                    G
-                </div>
-                <h2>Guest</h2>
-            </div>
-            <div class="conversation">
-                <div class="bubble messageReceived">
-                    <p>Message.</p>
-                </div>
-                <div class="bubble messageSent">
-                    <p>Response.</p>
-                </div>
 
-                <div class="messageInput">
-                    <form method="POST" style="display: flex; width: 100%;">
-                        {% csrf_token %}
-                        <input type="text" name="message" class="placeholder" placeholder="Type Message">
-                        <button type="submit" class="send-button">Send</button>
-                    </form>
+{% block title %}Team Chat{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'scheduling/css/chat.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="chat-page">
+    <div class="chat-shell page-card">
+        <aside class="chat-sidebar">
+            <p class="section-eyebrow">Conversations</p>
+            <label class="chat-search">
+                <span>Search</span>
+                <input type="text" placeholder="Search messages or teammates">
+            </label>
+            <button class="chat-thread is-active" type="button">
+                <span class="chat-thread__avatar">G</span>
+                <span>
+                    <strong>Guest</strong>
+                    <small>Can you cover Friday lunch?</small>
+                </span>
+            </button>
+            <button class="chat-thread" type="button">
+                <span class="chat-thread__avatar">M</span>
+                <span>
+                    <strong>Manager</strong>
+                    <small>Reminder: schedule closes at 5 PM.</small>
+                </span>
+            </button>
+        </aside>
+
+        <section class="chat-panel">
+            <div class="chat-panel__header">
+                <div class="chat-thread__avatar">G</div>
+                <div>
+                    <h1>Guest</h1>
+                    <p>Basic interactive layout ready for real messaging data.</p>
                 </div>
             </div>
-        </div>
+
+            <div class="chat-messages">
+                <article class="chat-bubble chat-bubble--incoming">
+                    <p>Could you swap with me on Saturday evening?</p>
+                </article>
+                <article class="chat-bubble chat-bubble--outgoing">
+                    <p>I can cover if the closing assignment is updated.</p>
+                </article>
+            </div>
+
+            <form class="chat-compose">
+                {% csrf_token %}
+                <input type="text" name="message" placeholder="Type a message">
+                <button class="button-primary" type="submit">Send</button>
+            </form>
+        </section>
     </div>
-</div>
-</body>
-</html>
+</section>
+{% endblock %}

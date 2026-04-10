@@ -1,0 +1,24 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Scheduler{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'scheduling/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}">
+    {% block page_css %}{% endblock %}
+</head>
+<body data-route="{{ request.resolver_match.url_name|default:'page' }}">
+    <div class="app-shell">
+        <header class="app-header">
+            {% include 'scheduling/nav_bar.html' %}
+        </header>
+        <main class="app-main">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <script src="{% static 'scheduling/js/navbar.js' %}"></script>
+    {% block page_js %}{% endblock %}
+</body>
+</html>

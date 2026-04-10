@@ -1,151 +1,101 @@
+{% extends 'scheduling/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Announcements</title>
-    <link rel="stylesheet" href="{% static 'scheduling/css/announcements.css' %}">
-</head>
-<body>
-    <!-- Nav Bar -->
-    <div id="navbar"> {% include 'scheduling/nav_bar.html' %}</div>
-    <!--<script src="{% static 'scheduling/js/nav_bar.js' %}"></script>-->
-    <!-- The Announcements Page-->
-    <div class="content">
-        <div class="announcements_area">
-            <!-- Tabs Create, New, Archive, All, Sent-->
-                <div class="tab">
-                    <button id="create" class="tablinks" onclick="controls(event, 'Create')">Create</button>  
-                    <button id="defaultOpen" class="tablinks" onclick="controls(event, 'New')">New</button>
-                    <button class="tablinks" onclick="controls(event, 'Archive')">Archive</button>
-                    <button class="tablinks" onclick="controls(event, 'All')">All</button>
-                    <button class="tablinks" onclick="controls(event, 'Sent')">Sent</button>
-                </div>
-            <!-- Tab Content -->
-            <div id="CreateMessage" class="messagecontent">
-                <form action="submit-email" method="post">
-                    <label for="email">Email address:</label>
-                    <input type="email" id="email" name="email" required>
-                    <button type="submit">Send</button>
-                    <form id="emailform" method="POST" autocomplete="off">
-                        {% csrf_token %}
-                        {{ form.as_p }}
-                    </form>
-            </div>
-            <div id="NewMessage" class="messagecontent">
-                <ul>
-                    <li><button class="emailBtn">email1</button></li> 
-                </ul>
-            </div>
-            <div id="NewTab" class="tabcontent">
-                <span class="status">{{status}}</span>
-                <h1>{{title}}</h1>
-                <div class="contentBody">
-                    {{content_body}}
-                </div>
+
+{% block title %}Announcements{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'scheduling/css/announcements.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="announcements-page">
+    <div class="announcements-shell page-card">
+        <aside class="announcements-sidebar">
+            <p class="section-eyebrow">Inbox</p>
+            <div class="announcement-tabs" role="tablist" aria-label="Announcement folders">
+                <button class="announcement-tab is-active" type="button" data-tab="new">New</button>
+                <button class="announcement-tab" type="button" data-tab="archive">Archive</button>
+                <button class="announcement-tab" type="button" data-tab="sent">Sent</button>
             </div>
 
-            <div id="ArchiveMessage" class="messagecontent">
-                <ul>
-                    <li><button class="emailBtn">email1</button></li> 
-                </ul>
-            </div>
-            <div id="ArchiveTab" class="tabcontent">
-                <span class="status">{{status}}</span>
-                <h1>{{title}}</h1>
-                <div class="contentBody">
-                    {{content_body}}
-                </div>
+            <div class="announcement-list" data-list="new">
+                <button class="announcement-item is-active" type="button" data-target="new">
+                    <strong>Schedule published</strong>
+                    <small>New shifts are live for next week.</small>
+                </button>
+                <button class="announcement-item" type="button" data-target="new">
+                    <strong>Training reminder</strong>
+                    <small>Kitchen training starts Thursday at 3 PM.</small>
+                </button>
             </div>
 
-            <div id="AllMessage" class="messagecontent">
-                <ul>
-                    <li><button class="emailBtn">email1</button></li> 
-                </ul>
-            </div>
-            <div id="AllTab" class="tabcontent">
-                <span class="status">{{status}}</span>
-                <h1>{{title}}</h1>
-                <div class="contentBody">
-                    {{content_body}}
-                </div>
+            <div class="announcement-list is-hidden" data-list="archive">
+                <button class="announcement-item" type="button" data-target="archive">
+                    <strong>Archived update</strong>
+                    <small>Past communication kept for reference.</small>
+                </button>
             </div>
 
-            <div id="SentMessage" class="messagecontent">
-                <ul>
-                    <li><button class="emailBtn">email1</button></li>  
-                </ul>
+            <div class="announcement-list is-hidden" data-list="sent">
+                <button class="announcement-item" type="button" data-target="sent">
+                    <strong>Team reminder</strong>
+                    <small>Sent to all staff this morning.</small>
+                </button>
             </div>
-            <div id="SentTab" class="tabcontent">
-                <span class="status">{{status}}</span>
-                <h1>{{title}}</h1>
-                <div class="contentBody">
-                    {{content_body}}
+        </aside>
+
+        <section class="announcement-detail">
+            <div class="announcement-detail__viewer">
+                <span class="pill">New</span>
+                <h1>Schedule published for next week</h1>
+                <p class="section-copy">
+                    Everyone can now review their shifts for the upcoming week. Please confirm availability changes before Friday at 5 PM so the final assignment pass can happen on time.
+                </p>
+            </div>
+
+            <form class="announcement-compose page-card">
+                <p class="section-eyebrow">Create Announcement</p>
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="announcement-title">Title</label>
+                        <input id="announcement-title" type="text" placeholder="Shift swap policy update">
+                    </div>
+                    <div class="field">
+                        <label for="announcement-audience">Audience</label>
+                        <select id="announcement-audience">
+                            <option>All Staff</option>
+                            <option>Front of House</option>
+                            <option>Back of House</option>
+                        </select>
+                    </div>
+                    <div class="field field--full">
+                        <label for="announcement-body">Message</label>
+                        <textarea id="announcement-body" placeholder="Share a concise update with the team."></textarea>
+                    </div>
                 </div>
-            </div>
-        </div>
+                <div class="announcement-compose__actions">
+                    <button class="button-ghost" type="button">Save Draft</button>
+                    <button class="button-primary" type="button">Post Announcement</button>
+                </div>
+            </form>
+        </section>
     </div>
+</section>
+{% endblock %}
+
+{% block page_js %}
 <script>
-  // displaying content for each tab
-  function controls(evt, announcementsTab) {
-    var i, tabcontent, tablinks, messagecontent;
-    tabcontent = document.getElementsByClassName("tabcontent");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
-    messagecontent =document.getElementsByClassName("messagecontent");
-    for (i = 0; i < messagecontent.length; i++) {
-        messagecontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tablinks");
-    for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
-        
-    } 
-    document.getElementById(announcementsTab + "Message").style.display = "block";
-    document.getElementById(announcementsTab + "Tab").style.display = "block";
-    evt.currentTarget.className += " active";
-}
-// Starting defaultOpen to the New tab 
-document.getElementById("defaultOpen").click();
+    const announcementTabs = document.querySelectorAll(".announcement-tab");
+    const announcementLists = document.querySelectorAll(".announcement-list");
 
-//
-const emails = document.getElementsByClassName("emailBtn");
+    announcementTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+            announcementTabs.forEach((node) => node.classList.remove("is-active"));
+            announcementLists.forEach((list) => list.classList.add("is-hidden"));
 
-  for (let i = 0; i < emails.length; i++) {
-    emails[i].addEventListener("click", function () {
-
-      if (window.innerWidth <= 768) {
-
-        // find the current visible tabcontent
-        const visibleContent = document.querySelector(".tabcontent[style*='block']");
-
-        const isOpen = visibleContent && visibleContent.style.display === "block";
-
-        // Reset all tabcontent + buttons
-        const allContents = document.getElementsByClassName("tabcontent");
-        for (let j = 0; j < allContents.length; j++) {
-          allContents[j].style.display = "none";
-        }
-
-        for (let j = 0; j < emails.length; j++) {
-          emails[j].classList.remove("active");
-        }
-
-        // Toggle open/close
-        if (!isOpen) {
-          // get the parent section (New, Archive, etc.)
-          const parent = this.closest(".messagecontent");
-          const tabId = parent.id.replace("Message", "Tab");
-          const target = document.getElementById(tabId);
-
-          target.style.display = "block";
-          this.classList.add("active");
-        }
-      }
+            tab.classList.add("is-active");
+            document.querySelector(`[data-list="${tab.dataset.tab}"]`).classList.remove("is-hidden");
+        });
     });
-  }
 </script>
-</body>
-</html>
+{% endblock %}

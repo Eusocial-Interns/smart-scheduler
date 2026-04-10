@@ -1,23 +1,16 @@
-// Display the navbar consistently arcoss all pages
-fetch
-("nav_bar.html")
-.then(response => response.text())
-.then(data => {
-    document.getElementById("navbar").innerHTML = data;
+const route = document.body.dataset.route;
+const navToggle = document.getElementById("nav-toggle");
+const navLinks = document.getElementById("nav-links");
 
-    // hamburger menu open and close
-    const hamburger = document.getElementById("hamburger");
-    const navLinks = document.getElementById("nav-links");
-
-    if (hamburger) {
-        hamburger.addEventListener("click", () => {
-            navLinks.classList.toggle("active");
-        });
+document.querySelectorAll(".nav-links a").forEach((link) => {
+    if (link.dataset.route === route) {
+        link.classList.add("is-active");
     }
-    
-    document.querySelectorAll('nav a').forEach (link => {
-        if (link.href === window.location.href) {
-        link.classList.add('active');
-      }  
-    });
 });
+
+if (navToggle && navLinks) {
+    navToggle.addEventListener("click", () => {
+        const isOpen = navLinks.classList.toggle("is-open");
+        navToggle.setAttribute("aria-expanded", String(isOpen));
+    });
+}

@@ -1,61 +1,32 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nav_Bar</title>
-    <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}">
+<nav class="top-nav">
+    <a class="brand-mark" href="{% url 'calendar' %}">
+        <span class="brand-mark__text">Esocial</span>
+    </a>
 
-</head>
-<body>
-    <!-- Nav Bar-->
-    <nav>
-        <div class="logo">
-            <h1><span class="#" style="color: white;">eu</span> Social</h1>
-        </div>
-        <div class="mobile_title">
-            {% if request.resolver_match.url_name == 'chat' %}
-                <h1>Chat</h1>
-            {% elif request.resolver_match.url_name == 'announcements' %}
-                <h1>Announcements</h1>
-            {% elif request.resolver_match.url_name == 'calendar' %}
-                <h1>Calendar</h1>
-            {% elif request.resolver_match.url_name == 'profile' %} 
-                <h1>Profile</h1>
-            {% else %}
-            <h1>General Page</h1>
-            {% endif %}
-        </div>
-        <div class="wrap">    
-            <!-- Hambuger -->
-            <a href="#" class="hamburger" id="hamburger">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span> 
-            </a>
-            <!-- Navigation Links-->
-            <div class="nav-links" id="nav-links">
-                <a href="{% url 'chat' %}">Chat</a>
-                <a href="{% url 'announcements' %}">Announcements</a>
-                <a href="{% url 'calendar' %}">Calendar</a>
-                <a href="{% url 'profile' %}">Profile</a>
-            </div>
-        </div>
-    </nav>
-    
-<script>
-const hamburger = document.getElementById('hamburger');
-const navLinks = document.getElementById('nav-links');
+    <div class="top-nav__page">
+        {% if request.resolver_match.url_name == 'chat' %}
+            <span>Team Chat</span>
+        {% elif request.resolver_match.url_name == 'announcements' %}
+            <span>Announcements</span>
+        {% elif request.resolver_match.url_name == 'calendar' %}
+            <span>Shift Calendar</span>
+        {% elif request.resolver_match.url_name == 'profile' %}
+            <span>Profile</span>
+        {% else %}
+            <span>Smart Scheduler</span>
+        {% endif %}
+    </div>
 
-hamburger.addEventListener('click', () => {
-  navLinks.classList.toggle('active');
-});
-document.querySelectorAll('nav a').forEach (link => {
-    if (link.href === window.location.href) {
-    link.classList.add('active');
-  }  
-});
-</script>
-</body>
-</html>
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="nav-links" id="nav-links">
+        <a href="{% url 'calendar' %}" data-route="calendar">Calendar</a>
+        <a href="{% url 'announcements' %}" data-route="announcements">Announcements</a>
+        <a href="{% url 'chat' %}" data-route="chat">Chat</a>
+        <a href="{% url 'profile' %}" data-route="profile">Profile</a>
+    </div>
+</nav>

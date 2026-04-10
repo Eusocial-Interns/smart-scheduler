@@ -1,63 +1,104 @@
-.content {
+.profile-page {
     display: flex;
     flex-direction: column;
-    margin-top: 20px;
-    padding-top: 25px;
+    gap: 1.25rem;
 }
 
-.profile {
-    align-self: center;
+.profile-hero,
+.profile-section {
+    padding: 1.5rem;
 }
 
-.avatar {
-   display: inline;
-   padding: 20px;
-   width: 80px;
-   height: 80px;
-   background-color: lightgray;
-   color: white;
-   font-size: 24px;
-   border-radius: 50%; 
-}
-
-.profileInfo {
+.profile-hero {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.profile-hero__identity {
+    display: flex;
+    gap: 1rem;
     align-items: center;
 }
 
-table {
-    width: 100%;
+.profile-avatar {
+    width: 92px;
+    height: 92px;
+    border-radius: 24px;
+    display: grid;
+    place-items: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
 }
 
-th {
-    background-color: #ffa31a;
-    text-align: start;
+.profile-hero__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-content: flex-start;
 }
 
-td {
-    height: 30px;
-    border-bottom: 1px solid #ffa31a;
+.profile-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 1.25rem;
 }
 
-.placeholder::placeholder {
-    font-size: 13px;
+.profile-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
 }
 
-.starRating {
-    color:rgb(195, 195, 195);    
+.profile-info-grid > div,
+.rating-card {
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.76);
+    border: 1px solid rgba(75, 58, 44, 0.1);
 }
 
-.starDetails {
-    background-color: #ffa31a;
-    cursor: pointer;
-    border: none;
-    font-size: 25px;
-    margin-top: 5px;
-    padding: 5px;
+.profile-info-grid span {
+    display: block;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
 }
 
-.starDetails:hover {
-    background-color: #fab245;
-    color: white; 
+.rating-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    min-height: 100%;
+}
+
+.rating-card__stars {
+    color: var(--accent);
+    font-size: 2rem;
+    letter-spacing: 0.15em;
+}
+
+@media (max-width: 920px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-hero {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 640px) {
+    .profile-hero__identity,
+    .profile-info-grid {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .profile-info-grid {
+        display: grid;
+    }
 }

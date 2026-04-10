@@ -1,6 +1,7 @@
 # Python 3.13
 asgiref==3.11.1
 Django==6.0.3
+dj-database-url==3.0.1
 django-filter==25.2
 djangorestframework==3.17.0
 Markdown==3.10.2

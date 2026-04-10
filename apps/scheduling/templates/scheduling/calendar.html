@@ -1,74 +1,196 @@
+{% extends 'scheduling/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html>
 
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="{% static 'scheduling/css/calendar.css' %}">
-    <title>Calendar</title>
-</head>
+{% block title %}Shift Calendar{% endblock %}
 
-<body>
-    <!-- Nav Bar -->
-    <div id="navbar">{% include 'scheduling/nav_bar.html' %}</div>
-    <!--<script src="{% static 'scheduling/js/nav_bar.js' %}"></script>-->
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'scheduling/css/calendar.css' %}">
+{% endblock %}
 
-    <div class = "wrapper">
-        <h1 id="monthAndYear"></h1>
-        <div class="button-container-calendar">
-                <button id="previous" onclick="previous()"> 
-                </button>
-                <button id="next" onclick="next()"> >
-                </button>
-            </div>
-        <div class = "container-calendar">
-            <table class="table-calendar" id="calendar" data-lang="en">
-                <thead id="thead-month"></thead>
-                <tbody id="calendar-body"></tbody>
-            </table>
-            <div class="footer-container-calendar">
-                <label for="month">Jump To: </label>
-                <p></p>
-                <select id="month" onchange="jump()">
-                    <option value=0>Jan</option>
-                    <option value=1>Feb</option>
-                    <option value=2>Mar</option>
-                    <option value=3>Apr</option>
-                    <option value=4>May</option>
-                    <option value=5>Jun</option>
-                    <option value=6>Jul</option>
-                    <option value=7>Aug</option>
-                    <option value=8>Sep</option>
-                    <option value=9>Oct</option>
-                    <option value=10>Nov</option>
-                    <option value=11>Dec</option>
-                </select>
-                <select id="year" onchange="jump()"></select>
+{% block content %}
+<section class="calendar-page">
+    <div class="calendar-hero page-card">
+        <div>
+            <p class="section-eyebrow">Scheduling Workspace</p>
+            <h1 class="section-title">Build weekly coverage without losing the human context.</h1>
+            <p class="section-copy">
+                Navigate the month, review assignments by day, and create new shifts from the same screen.
+            </p>
+        </div>
+        <div class="calendar-hero__actions">
+                <button class="button-ghost" id="open-employee-modal" type="button">Add Employee</button>
+            <div class="calendar-hero__buttons">
+                <button style='visibility: hidden; pointer-events: none;' class="button-ghost" id="open-employee-modal" type="button">Add Employee</button>
+                <button class="button-primary" id="open-shift-modal" type="button">Add Shift</button>
             </div>
         </div>
-        <div id="event-section">
-            <h3>Add Shift</h3>
-            <input type="date" id="eventDate">
-            <input type="time" id="eventStartTime">
-            <input type="time" id="eventEndTime">
-            <select id="employee" >
-                <option value="">Select employee</option>
-                <option value="0">Elizabeth</option>
-                <option value="1">Mohammad</option>
-                <option value="2">Stephen</option>
-            </select>
-            <select id="position">
-                <option value="">Select position</option>
-                <option value="0">Server</option>
-                <option value="1">Busser</option>
-                <option value="2">Cook</option>
-            </select>
-            <input type="text" id="eventTitle" placeholder="Notes">
-            <button id="addEvent" onclick="addEvent()">Add</button>
-        </div>
-        
     </div>
-    <script src="{% static 'scheduling/js/calendar.js' %}"></script>
-</body>
 
-</html>
+    <div class="calendar-layout">
+        <section class="calendar-board page-card">
+            <div class="calendar-board__header">
+                <div class="calendar-board__intro">
+                    <p class="section-eyebrow">Month View</p>
+                    <h2 class="calendar-board__title" id="monthAndYear"></h2>
+                    <p class="calendar-board__copy">Scan the month, click any day for full detail, and manage coverage without leaving this screen.</p>
+                </div>
+                <div class="calendar-board__controls">
+                    <button class="button-ghost" id="previous" type="button">Previous</button>
+                    <button class="button-secondary" id="today-button" type="button">Today</button>
+                    <button class="button-ghost" id="next" type="button">Next</button>
+                </div>
+            </div>
+
+            <div class="calendar-board__toolbar">
+                <div class="field">
+                    <label for="month">Jump to month</label>
+                    <select id="month"></select>
+                </div>
+                <div class="field">
+                    <label for="year">Jump to year</label>
+                    <select id="year"></select>
+                </div>
+            </div>
+
+            <div class="metrics-strip">
+                <div class="metrics-strip__card">
+                    <span class="metrics-strip__label">Employees</span>
+                    <strong id="employee-count">0</strong>
+                </div>
+                <div class="metrics-strip__card">
+                    <span class="metrics-strip__label">Roles</span>
+                    <strong id="role-count">0</strong>
+                </div>
+                <div class="metrics-strip__card">
+                    <span class="metrics-strip__label">Shifts This Month</span>
+                    <strong id="shift-count">0</strong>
+                </div>
+                <div class="metrics-strip__card">
+                    <span class="metrics-strip__label">Assignments</span>
+                    <strong id="assignment-count">0</strong>
+                </div>
+            </div>
+
+            <div class="calendar-grid" id="calendar-grid"></div>
+        </section>
+
+        <aside class="calendar-sidebar">
+            <section class="sidebar-panel sidebar-panel--focus page-card">
+                <div class="sidebar-panel__header">
+                    <div>
+                        <p class="section-eyebrow">Selected Day</p>
+                        <h2 class="sidebar-panel__title" id="selected-day-title">Choose a day</h2>
+                    </div>
+                    <span class="pill">Daily detail</span>
+                </div>
+                <div id="selected-day-shifts" class="selected-day-shifts">
+                    <div class="empty-state">Pick a date on the calendar to review the scheduled shifts.</div>
+                </div>
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-panel__subsection">
+                    <p class="section-eyebrow">Staff This Shift</p>
+                    <form id="assignment-form" class="assignment-form">
+                        <div class="field">
+                            <label for="assignment-shift">Shift</label>
+                            <select id="assignment-shift" required>
+                                <option value="">Select a shift</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="assignment-employee">Employee</label>
+                            <select id="assignment-employee" required>
+                                <option value="">Select an employee</option>
+                            </select>
+                        </div>
+                        <button class="button-primary" type="submit">Assign to Shift</button>
+                    </form>
+                </div>
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-panel__subsection">
+                    <div class="sidebar-panel__mini-header">
+                        <p class="section-eyebrow">Team</p>
+                        <button class="button-ghost button-ghost--small" id="open-employee-modal-inline" type="button">New Employee</button>
+                    </div>
+                    <div id="employee-roster" class="employee-roster">
+                        <div class="empty-state">No employees added yet.</div>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <div class="status-banner" id="calendar-status"></div>
+</section>
+
+<div class="modal" id="shift-modal" aria-hidden="true">
+    <div class="modal__panel">
+        <div class="modal__header">
+            <div>
+                <p class="section-eyebrow">Create Shift</p>
+                <h2 class="section-title">Add a shift to the schedule</h2>
+            </div>
+            <button class="button-ghost" id="close-shift-modal" type="button">Close</button>
+        </div>
+
+        <form id="shift-form" class="form-grid">
+            <div class="field">
+                <label for="shift-title">Shift title</label>
+                <input id="shift-title" name="title" type="text" placeholder="Lunch service" required>
+            </div>
+            <div class="field">
+                <label for="shift-role">Role</label>
+                <select id="shift-role" name="role">
+                    <option value="">Select a role</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="shift-start">Start</label>
+                <input id="shift-start" name="start_time" type="datetime-local" required>
+            </div>
+            <div class="field">
+                <label for="shift-end">End</label>
+                <input id="shift-end" name="end_time" type="datetime-local" required>
+            </div>
+            <div class="field field--full">
+                <label for="shift-notes">Notes</label>
+                <textarea id="shift-notes" name="notes" placeholder="Anything the team should know?"></textarea>
+            </div>
+            <div class="field field--full">
+                <button class="button-primary" type="submit">Create Shift</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="employee-modal" aria-hidden="true">
+    <div class="modal__panel modal__panel--compact">
+        <div class="modal__header">
+            <div>
+                <p class="section-eyebrow">Create Employee</p>
+                <h2 class="section-title">Add a team member</h2>
+            </div>
+            <button class="button-ghost" id="close-employee-modal" type="button">Close</button>
+        </div>
+
+        <form id="employee-form" class="form-grid">
+            <div class="field">
+                <label for="employee-name">Full name</label>
+                <input id="employee-name" name="name" type="text" placeholder="Adriana Lopez" required>
+            </div>
+            <div class="field">
+                <label for="employee-email">Email</label>
+                <input id="employee-email" name="email" type="email" placeholder="adriana@example.com" required>
+            </div>
+            <div class="field field--full">
+                <button class="button-primary" type="submit">Create Employee</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% include 'scheduling/partials/shift_card.html' %}
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'scheduling/js/calendar.js' %}"></script>
+{% endblock %}
