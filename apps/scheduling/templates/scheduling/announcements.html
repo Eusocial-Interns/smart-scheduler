@@ -1,0 +1,151 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcements</title>
+    <link rel="stylesheet" href="{% static 'scheduling/css/announcements.css' %}">
+</head>
+<body>
+    <!-- Nav Bar -->
+    <div id="navbar"> {% include 'scheduling/nav_bar.html' %}</div>
+    <!--<script src="{% static 'scheduling/js/nav_bar.js' %}"></script>-->
+    <!-- The Announcements Page-->
+    <div class="content">
+        <div class="announcements_area">
+            <!-- Tabs Create, New, Archive, All, Sent-->
+                <div class="tab">
+                    <button id="create" class="tablinks" onclick="controls(event, 'Create')">Create</button>  
+                    <button id="defaultOpen" class="tablinks" onclick="controls(event, 'New')">New</button>
+                    <button class="tablinks" onclick="controls(event, 'Archive')">Archive</button>
+                    <button class="tablinks" onclick="controls(event, 'All')">All</button>
+                    <button class="tablinks" onclick="controls(event, 'Sent')">Sent</button>
+                </div>
+            <!-- Tab Content -->
+            <div id="CreateMessage" class="messagecontent">
+                <form action="submit-email" method="post">
+                    <label for="email">Email address:</label>
+                    <input type="email" id="email" name="email" required>
+                    <button type="submit">Send</button>
+                    <form id="emailform" method="POST" autocomplete="off">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                    </form>
+            </div>
+            <div id="NewMessage" class="messagecontent">
+                <ul>
+                    <li><button class="emailBtn">email1</button></li> 
+                </ul>
+            </div>
+            <div id="NewTab" class="tabcontent">
+                <span class="status">{{status}}</span>
+                <h1>{{title}}</h1>
+                <div class="contentBody">
+                    {{content_body}}
+                </div>
+            </div>
+
+            <div id="ArchiveMessage" class="messagecontent">
+                <ul>
+                    <li><button class="emailBtn">email1</button></li> 
+                </ul>
+            </div>
+            <div id="ArchiveTab" class="tabcontent">
+                <span class="status">{{status}}</span>
+                <h1>{{title}}</h1>
+                <div class="contentBody">
+                    {{content_body}}
+                </div>
+            </div>
+
+            <div id="AllMessage" class="messagecontent">
+                <ul>
+                    <li><button class="emailBtn">email1</button></li> 
+                </ul>
+            </div>
+            <div id="AllTab" class="tabcontent">
+                <span class="status">{{status}}</span>
+                <h1>{{title}}</h1>
+                <div class="contentBody">
+                    {{content_body}}
+                </div>
+            </div>
+
+            <div id="SentMessage" class="messagecontent">
+                <ul>
+                    <li><button class="emailBtn">email1</button></li>  
+                </ul>
+            </div>
+            <div id="SentTab" class="tabcontent">
+                <span class="status">{{status}}</span>
+                <h1>{{title}}</h1>
+                <div class="contentBody">
+                    {{content_body}}
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+  // displaying content for each tab
+  function controls(evt, announcementsTab) {
+    var i, tabcontent, tablinks, messagecontent;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    messagecontent =document.getElementsByClassName("messagecontent");
+    for (i = 0; i < messagecontent.length; i++) {
+        messagecontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+        
+    } 
+    document.getElementById(announcementsTab + "Message").style.display = "block";
+    document.getElementById(announcementsTab + "Tab").style.display = "block";
+    evt.currentTarget.className += " active";
+}
+// Starting defaultOpen to the New tab 
+document.getElementById("defaultOpen").click();
+
+//
+const emails = document.getElementsByClassName("emailBtn");
+
+  for (let i = 0; i < emails.length; i++) {
+    emails[i].addEventListener("click", function () {
+
+      if (window.innerWidth <= 768) {
+
+        // find the current visible tabcontent
+        const visibleContent = document.querySelector(".tabcontent[style*='block']");
+
+        const isOpen = visibleContent && visibleContent.style.display === "block";
+
+        // Reset all tabcontent + buttons
+        const allContents = document.getElementsByClassName("tabcontent");
+        for (let j = 0; j < allContents.length; j++) {
+          allContents[j].style.display = "none";
+        }
+
+        for (let j = 0; j < emails.length; j++) {
+          emails[j].classList.remove("active");
+        }
+
+        // Toggle open/close
+        if (!isOpen) {
+          // get the parent section (New, Archive, etc.)
+          const parent = this.closest(".messagecontent");
+          const tabId = parent.id.replace("Message", "Tab");
+          const target = document.getElementById(tabId);
+
+          target.style.display = "block";
+          this.classList.add("active");
+        }
+      }
+    });
+  }
+</script>
+</body>
+</html>

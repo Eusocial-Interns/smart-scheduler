@@ -1,6 +1,8 @@
 from django.db import models
 
-
+# Create your models here.
+from django.db import models
+# Users / Employees
 class Employee(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
@@ -12,6 +14,7 @@ class Employee(models.Model):
         return self.name
 
 
+# Roles
 class Role(models.Model):
     name = models.CharField(max_length=100)
 
@@ -22,35 +25,25 @@ class Role(models.Model):
         return self.name
 
 
+# Availability
 class Availability(models.Model):
-    employee = models.ForeignKey("Employee", on_delete=models.CASCADE, related_name="availabilities")
-
-    date = models.DateField()
-
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    day_of_week = models.CharField(max_length=10)
     start_time = models.TimeField()
     end_time = models.TimeField()
-
-    STATUS_CHOICES = [
-        ("available", "Available"),
-        ("unavailable", "Unavailable"),
-        ("preferred", "Preferred"),
-    ]
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="available")
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.employee} - {self.date} ({self.start_time} to {self.end_time})"
-
-
-class Shift(models.Model):
-    start_time = models.DateTimeField(null=True, blank=True)
-    end_time = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 
+
+# Shifts
+class Shift(models.Model):
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+# Assignments
 class Assignment(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     shift = models.ForeignKey(Shift, on_delete=models.CASCADE)

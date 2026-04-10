@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="{% static 'scheduling/css/chat.css' %}">
+</head>
+<body>
+<!-- Nav Bar -->
+<div id="navbar">{% include 'scheduling/nav_bar.html' %}</div>
+<!--<script src="{% static 'scheduling/js/navbar.js' %}"></script>-->
+<!-- Chat Content-->
+<div class="content">
+    <div class="conversationList">
+        <div class="listPanel">
+            <input type="text" class="placeholder" placeholder="Search">
+            <div class="messageContent">
+                <div class="avatar">
+                    G
+                </div>
+                <div class="message">
+                    <h2>Guest</h2>
+                    <p>Message.</p>
+                </div>
+            </div>  
+        </div>
+        <div class="messagePanel">
+            <div class="currentAvatar">
+                <div class="avatar">
+                    G
+                </div>
+                <h2>Guest</h2>
+            </div>
+            <div class="conversation">
+                <div class="bubble messageReceived">
+                    <p>Message.</p>
+                </div>
+                <div class="bubble messageSent">
+                    <p>Response.</p>
+                </div>
+
+                <div class="messageInput">
+                    <form method="POST" style="display: flex; width: 100%;">
+                        {% csrf_token %}
+                        <input type="text" name="message" class="placeholder" placeholder="Type Message">
+                        <button type="submit" class="send-button">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
