@@ -1,9 +1,12 @@
+
 from apps.scheduling.models import Shift
+from django.core.exceptions import ValidationError
 
+def create_shift(data):
+    start = data.get("start_time")
+    end = data.get("end_time")
 
-def create_shift(validated_data):
-    return Shift.objects.create(**validated_data)
+    if start >= end:
+        raise ValidationError("End time must be after start time")
 
-
-def get_all_shifts():
-    return Shift.objects.all()
+    return Shift.objects.create(**data)
