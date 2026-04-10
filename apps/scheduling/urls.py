@@ -1,9 +1,17 @@
-from django.contrib import admin
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import EmployeeViewSet, ShiftViewSet, AssignmentViewSet, calendar_view, profile_view, announcements_view, chat_view
 
-appname = 'scheduling'
+
+router = DefaultRouter()
+router.register(r'api/v1/employees', EmployeeViewSet, basename='employee')
+router.register(r'api/v1/shifts', ShiftViewSet, basename='shift')
+router.register(r'api/v1/assignments', AssignmentViewSet, basename='assignment')
 
 urlpatterns = [
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('', include(router.urls)),
+    path('calendar/', calendar_view, name='calendar'),
+    path('profile/', profile_view, name='profile'),
+    path('announcements/', announcements_view, name='announcements'),
+    path('chat/', chat_view, name='chat'),
 ]

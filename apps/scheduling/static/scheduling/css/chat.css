@@ -1,0 +1,105 @@
+.content {
+   display: flex;
+   flex-direction: column;
+   margin-top: 10px;
+}
+
+.conversationList {
+   display: flex;
+   flex-direction: row;
+   width: 100%; 
+}
+.listPanel {
+   border: 1px solid;
+   width: 85%;
+   height: 100%;    
+}
+.listPanel input {
+   font-size: 25px;
+   margin: 5px;
+}
+.messageContent {
+   display: flex;
+   flex-direction: row;
+}
+.message {
+   display: flex;
+   flex-direction: column;
+   line-height: 0px; 
+}
+.avatar {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 60px;
+   height: 60px;
+   background-color: lightgray;
+   color: white;
+   font-size: 24px;
+   border-radius: 50%; 
+}
+.messagePanel {
+   width: 100%;
+   height: 100%;
+   border: 1px solid;
+}
+.currentAvatar {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+}
+
+.conversation {
+  display: flex;
+  flex-direction: column;
+  margin-top: 250px;
+  gap: 10px;
+}
+.bubble {
+  max-width: 75%;
+  padding: 5px 7px;
+  border-radius: 18px;
+  font-size: 20px;
+  line-height: 1;
+}
+.messageReceived {
+   align-self: flex-start;
+   background-color: lightgray;
+   font-style: bold;
+}
+.messageSent {
+   align-self: flex-end;
+   background-color: #fbb54c;
+   font-style: bold;
+}
+.messageInput {
+   margin-top: 40px;
+}
+.messageInput input {
+   font-size: 28px;
+   padding: 10px;
+   background-color: lightgray;
+   color: black;
+}
+.messageInput button {
+   font-size: 30px;
+   padding: 0 20px;
+   cursor: pointer;
+   background-color: #ffa31a;
+}
+.messageInput button:hover {
+   background-color: #fbb54c;
+   color:white;
+}
+/* Mobile Screen */
+@media (max-width: 768px) {
+      .messageInput {
+      margin-top: 20px;
+   }
+      .messageInput input {
+      font-size: 14px;
+   }
+      .messageInput button {
+      font-size: 14px;
+   }  
+}
