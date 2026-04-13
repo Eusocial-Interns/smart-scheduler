@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .controls { display: flex; align-items: center; gap: 20px; font-family: sans-serif; }
+    .week-display { text-align: center; min-width: 200px; }
+    button { padding: 8px 12px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="controls">
+    <!-- Rule 1: Move to previous week -->
+    <button id="prevWeek">Previous</button>
+
+    <div class="week-display">
+      <!-- Rule 3: Clearly shown range -->
+      <h2 id="dateRange">Loading...</h2>
+    </div>
+
+    <!-- Rule 2: Move to next week -->
+    <button id="nextWeek">Next</button>
+  </div>
+
+  <!-- Rule 4: Schedule area (updates without reload) -->
+  <div id="scheduleContent" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">
+    Schedule data will appear here.
+  </div>
+
+  <script>
+    // Initialize state with today's date
+    let referenceDate = new Date();
+
+    function updateUI() {
+      // Calculate Monday of the current reference week
+      const start = new Date(referenceDate);
+      const day = start.getDay();
+      const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+      start.setDate(diff);
+
+      // Calculate Sunday
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+
+      // Rule 3: Format and display the range
+      const options = { month: 'short', day: 'numeric', year: 'numeric' };
+      document.getElementById('dateRange').innerText = 
+        `${start.toLocaleDateString(undefined, options)} – ${end.toLocaleDateString(undefined, options)}`;
+
+      // Rule 4: Update content without reload
+      document.getElementById('scheduleContent').innerText = 
+        `Now viewing schedule starting ${start.toDateString()}`;
+      
+      console.log("Schedule updated via JS (no page reload).");
+    }
+
+    // Rule 1 & 2: Navigation event listeners
+    document.getElementById('prevWeek').addEventListener('click', () => {
+      referenceDate.setDate(referenceDate.getDate() - 7);
+      updateUI();
+    });
+
+    document.getElementById('nextWeek').addEventListener('click', () => {
+      referenceDate.setDate(referenceDate.getDate() + 7);
+      updateUI();
+    });
+
+    // Initial load
+    updateUI();
+  </script>
+
+</body>
+</html>
