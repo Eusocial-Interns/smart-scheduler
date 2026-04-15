@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-import dj_database_url
+#import dj_database_url
 import os
 from dotenv import load_dotenv
 
@@ -84,12 +84,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-    )
-}
+#DATABASES = {
+    #"default": dj_database_url.config(
+        #default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        #conn_max_age=600,
+    #)
+#}
 
 
 # Password validation

@@ -11,6 +11,7 @@ from .views import (
     calendar_view,
     chat_view,
     profile_view,
+    weekly_schedule_view,
 )
 
 router = DefaultRouter()
@@ -26,4 +27,5 @@ urlpatterns = [
     path("profile/", profile_view, name="profile"),
     path("announcements/", announcements_view, name="announcements"),
     path("chat/", chat_view, name="chat"),
+    path("weekly_schedule/", weekly_schedule_view, name="weekly_schedule")
 ]
