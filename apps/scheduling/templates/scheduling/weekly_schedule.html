@@ -1,203 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Weekly Schedule</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; color: #333; }
-    .controls { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
-    .week-display { text-align: center; min-width: 250px; }
-    button { padding: 8px 12px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; }
-
-    /* Workflow Styles */
-    .status-banner { 
-      padding: 15px; 
-      margin-bottom: 20px; 
-      border-radius: 4px; 
-      font-weight: bold; 
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .draft { background: rgba(241, 199, 161, 0.4); color: #856404; border: 1px solid #ffeeba; }
-    .published { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    
-    #publishBtn { background: #2d3748; color: white; border: none; font-weight: bold; }
-    #publishBtn:disabled { background: #ccc; cursor: not-allowed; }
-
-    /* --- NEW: Coverage & Table Styles --- */
-    .schedule-table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
-    .schedule-table th, .schedule-table td { border: 1px solid #e2e8f0; padding: 12px; vertical-align: top; }
-    .schedule-table th { background: #f8fafc; font-size: 0.85rem; text-transform: uppercase; color: #64748b; }
-
-    .role-label { font-weight: bold; background: #f1f5f9; width: 150px; }
-
-    /* Cell States */
-    .cell-content { min-height: 60px; display: flex; flex-direction: column; justify-content: space-between; }
-    .staff-list { font-size: 0.9rem; margin-bottom: 8px; }
-    
-    [data-status="full"] { background-color: #f0fff4; border-top: 3px solid #38a169; }
-    [data-status="understaffed"] { background-color: #fff5f5; border-top: 3px solid #e53e3e; }
-
-    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
-    .badge-full { background: #c6f6d5; color: #22543d; }
-    .badge-warn { background: #fed7d7; color: #822727; }
-  </style>
+  <title>Weekly Schedule - Full-Stack</title>
+  <link rel="stylesheet" href="{% static 'scheduling/css/weekly_schedule.css' %}">
 </head>
 <body>
 
-  <div id="statusBanner" class="status-banner draft">
+<div class="container" id="mainContainer">
+  <!-- Status Banner -->
+  <div id="statusBanner" class="status-banner draft-banner">
     <div>
-      Status: <span id="statusLabel">DRAFT</span>
-      <div style="font-weight: normal; font-size: 0.8em;">Staff cannot see this yet.</div>
+      <strong>Status: <span id="statusLabel">DRAFT</span></strong>
+      <div id="statusSubtext" style="font-size: 0.8rem; opacity: 0.8;">Visible to managers only.</div>
     </div>
-    <button id="publishBtn" onclick="publishSchedule()">Publish This Week</button>
-  </div>
-
-  <div class="controls">
-    <button id="prevWeek">Previous</button>
-    <div class="week-display">
-      <h2 id="dateRange">Loading...</h2>
+    <div>
+      <button class="publish-btn" id="actionBtn" onclick="togglePublish()">Publish Week</button>
+      <span id="unpublishArea" style="display:none;" onclick="togglePublish()" class="unpublish-link">Set to Draft</span>
     </div>
-    <button id="nextWeek">Next</button>
   </div>
 
-  <!-- Updated Schedule View -->
-  <div id="scheduleContent">
-    <table class="schedule-table" id="scheduleTable">
-      <thead>
-        <tr id="tableHeaders">
-          <th class="role-label">Role</th>
-          <!-- Days injected by JS -->
-        </tr>
-      </thead>
-      <tbody id="tableBody">
-        <!-- Rows injected by JS -->
-      </tbody>
-    </table>
+  <!-- Navigation Controls -->
+  <div class="nav-bar-week">
+    <button class="nav-btn-week" onclick="changeWeek(-7)">◀ Previous Week</button>
+    <div class="date-header" id="dateHeading">Loading...</div>
+    <button class="nav-btn-week" onclick="changeWeek(7)">Next Week ▶</button>
   </div>
 
-  <p id="apiMessage" style="font-size: 0.9em; color: #666; margin-top: 20px;"></p>
+  <!-- Schedule Table -->
+  <table class="schedule-table">
+    <thead>
+      <tr>
+        <th class="role-col">Role</th>
+        <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+      </tr>
+    </thead>
+    <tbody id="scheduleBody"></tbody>
+  </table>
+</div>
 
-  <script>
-    let referenceDate = new Date();
-    
-    // MOCK DATA: In a real app, this comes from your Backend Rule #2
-    const mockCoverage = {
-      "Manager": { current: 1, target: 1, staff: ["Alice"] },
-      "Cashier": { current: 1, target: 2, staff: ["Charlie"] }
-    };
-
-    function updateUI() {
-      const start = new Date(referenceDate);
-      const day = start.getDay();
-      const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-      start.setDate(diff);
-
-      const options = { month: 'short', day: 'numeric', year: 'numeric' };
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      
-      document.getElementById('dateRange').innerText = 
-        `${start.toLocaleDateString(undefined, options)} – ${end.toLocaleDateString(undefined, options)}`;
-
-      renderTable(start);
-      resetStatusToDraft();
-    }
-
-    function renderTable(startDate) {
-      const headerRow = document.getElementById('tableHeaders');
-      const body = document.getElementById('tableBody');
-      
-      // Clear existing
-      headerRow.innerHTML = '<th class="role-label">Role</th>';
-      body.innerHTML = '';
-
-      // Create 7 Days of Headers
-      for(let i=0; i<7; i++) {
-        const d = new Date(startDate);
-        d.setDate(startDate.getDate() + i);
-        const th = document.createElement('th');
-        th.innerText = d.toLocaleDateString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric' });
-        headerRow.appendChild(th);
-      }
-
-      // Create Role Rows (Manager & Cashier)
-      Object.keys(mockCoverage).forEach(role => {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td class="role-label">${role}</td>`;
-        
-        for(let i=0; i<7; i++) {
-          const data = mockCoverage[role];
-          const isFull = data.current >= data.target;
-          const status = isFull ? "full" : "understaffed";
-          const badgeClass = isFull ? "badge-full" : "badge-warn";
-          const icon = isFull ? "✓" : "⚠";
-
-          const td = document.createElement('td');
-          td.setAttribute('data-status', status);
-          td.innerHTML = `
-            <div class="cell-content">
-              <div class="staff-list">${data.staff.join(', ')}</div>
-              <div>
-                <span class="badge ${badgeClass}">${icon} ${data.current}/${data.target}</span>
-              </div>
-            </div>
-          `;
-          row.appendChild(td);
-        }
-        body.appendChild(row);
-      });
-    }
-
-    function resetStatusToDraft() {
-        const banner = document.getElementById('statusBanner');
-        const btn = document.getElementById('publishBtn');
-        banner.className = "status-banner draft";
-        document.getElementById('statusLabel').innerText = "DRAFT";
-        btn.style.display = "block";
-        document.getElementById('apiMessage').innerText = "";
-    }
-
-    async function publishSchedule() {
-        const btn = document.getElementById('publishBtn');
-        const banner = document.getElementById('statusBanner');
-        const label = document.getElementById('statusLabel');
-        const msg = document.getElementById('apiMessage');
-
-        msg.innerText = "Publishing...";
-
-        try {
-            const response = await fetch('http://localhost:3000/publish', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ weekStart: document.getElementById('dateRange').innerText })
-            });
-
-            if (response.ok) {
-                banner.className = "status-banner published";
-                label.innerText = "PUBLISHED";
-                btn.style.display = "none";
-                msg.innerText = "Success! The team has been notified.";
-            }
-        } catch (err) {
-            msg.innerText = "Note: Backend not connected. (Visual demo only)";
-            banner.className = "status-banner published";
-            label.innerText = "PUBLISHED (Demo)";
-            btn.style.display = "none";
-        }
-    }
-
-    document.getElementById('prevWeek').addEventListener('click', () => {
-      referenceDate.setDate(referenceDate.getDate() - 7);
-      updateUI();
-    });
-
-    document.getElementById('nextWeek').addEventListener('click', () => {
-      referenceDate.setDate(referenceDate.getDate() + 7);
-      updateUI();
-    });
-
-    updateUI();
-  </script>
+<script src="{% static 'scheduling/js/weekly_schedule.js' %}"></script>
 </body>
 </html>
