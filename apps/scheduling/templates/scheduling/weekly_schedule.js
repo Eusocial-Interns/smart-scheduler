@@ -84,7 +84,11 @@ function renderSchedule(data) {
       assignments.forEach(a => {
         const div = document.createElement('div');
         div.className = `assignment ${getShiftClass(a.start)}`;
-        div.textContent = `${a.employee_name} (${a.start}-${a.end})`;
+        div.innerHTML = `
+        <div style="font-weight:600">${a.employee_name}</div>
+        <div>${formatTime(a.start)}–${formatTime(a.end)}</div>
+  
+`;
         cell.appendChild(div);
       });
 
@@ -100,6 +104,23 @@ function getShiftClass(startTime) {
   if (hour < 17) return "shift-afternoon";
   if (hour < 21) return "shift-evening";
   return "shift-night";
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return "";
+
+  // handle edge case from your mock data
+  if (timeStr === "24:00") return "12:00 AM";
+
+  const [hourStr, minute] = timeStr.split(":");
+  let hour = parseInt(hourStr);
+
+  const period = hour >= 12 ? "PM" : "AM";
+
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+
+  return `${hour}:${minute} ${period}`;
 }
 
 fetchData().then(data => {
