@@ -16,69 +16,75 @@ async function fetchData() {
 
 function mockData() {
   return Promise.resolve({
+    week_start: "2026-04-13",
+    days: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
     roles: [
-      { id: 1, name: "Manager" },
-      { id: 2, name: "Server" },
-      { id: 3, name: "Cook" },
-      { id: 4, name: "Host"}
-    ],
-    employees: [
-      { id: 1, name: "Elizabeth" },
-      { id: 2, name: "Stephen" },
-      { id: 3, name: "Mohammed" },
-      { id: 4, name: "Gabriel" }
-    ],
-    assignments: [
-      { employee_id: 1, role_id: 1, date: "2026-04-13", shift_start: "09:00", shift_end: "17:00" },
-      { employee_id: 2, role_id: 2, date: "2026-04-13", shift_start: "10:00", shift_end: "18:00" },
-      { employee_id: 3, role_id: 2, date: "2026-04-14", shift_start: "11:00", shift_end: "19:00" },
-      { employee_id: 4, role_id: 3, date: "2026-04-15", shift_start: "08:00", shift_end: "16:00" },
-      { employee_id: 2, role_id: 2, date: "2026-04-15", shift_start: "17:00", shift_end: "22:00" },
-      { employee_id: 4, role_id: 2, date: "2026-04-17", shift_start: "09:00", shift_end: "17:00" },
-      { employee_id: 1, role_id: 2, date: "2026-04-17", shift_start: "09:00", shift_end: "17:00" },
+      {
+        role_name: "Manager",
+        days: {
+          0: [{ employee_name: "Elizabeth", start: "09:00", end: "17:00" }],
+          1: [], 2: [], 3: [], 4: [], 5: [], 6: []
+        }
+      },
+      {
+        role_name: "Server",
+        days: {
+          0: [{ employee_name: "Stephen", start: "10:00", end: "18:00" }],
+          1: [{ employee_name: "Mohammed", start: "11:00", end: "19:00" }],
+          2: [{ employee_name: "Stephen", start: "17:00", end: "22:00" }],
+          3: [],
+          4: [
+            { employee_name: "Gabriel", start: "09:00", end: "17:00" },
+            { employee_name: "Elizabeth", start: "09:00", end: "17:00" },
+            { employee_name: "Gabriel", start: "09:00", end: "17:00" },
+            { employee_name: "Elizabeth", start: "09:00", end: "17:00" }
+          ],
+          5: [],
+          6: []
+        }
+      },
+      {
+        role_name: "Cook",
+        days: {
+          0: [], 1: [], 2: [
+            { employee_name: "Gabriel", start: "08:00", end: "16:00" }
+          ],
+          3: [], 4: [], 5: [], 6: []
+        }
+      },
+      {
+        role_name: "Host",
+        days: {
+          0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []
+        }
+      }
     ]
   });
 }
 
-function groupAssignments(assignments) {
-  const grouped = {};
 
-  assignments.forEach(a => {
-    const day = new Date(a.date).getDay(); // 0–6
-    if (!grouped[a.role_id]) grouped[a.role_id] = {};
-    if (!grouped[a.role_id][day]) grouped[a.role_id][day] = [];
 
-    grouped[a.role_id][day].push(a);
-  });
-
-  return grouped;
-}
-
-function renderSchedule({ roles, employees, assignments }) {
+function renderSchedule(data) {
   const grid = document.getElementById('scheduleGrid');
-  const grouped = groupAssignments(assignments);
 
-  roles.forEach(role => {
+  data.roles.forEach(role => {
     // Role label
     const roleCell = document.createElement('div');
     roleCell.className = 'role-cell';
-    roleCell.textContent = role.name;
+    roleCell.textContent = role.role_name;
     grid.appendChild(roleCell);
 
-    // 7 days
+    // Days 0–6
     for (let day = 0; day < 7; day++) {
       const cell = document.createElement('div');
       cell.className = 'day-cell';
 
-      const dayAssignments = grouped[role.id]?.[day] || [];
+      const assignments = role.days[day] || [];
 
-      dayAssignments.forEach(a => {
-        const emp = employees.find(e => e.id === a.employee_id);
-
+      assignments.forEach(a => {
         const div = document.createElement('div');
         div.className = 'assignment';
-        div.textContent = `${emp?.name || 'Unknown'} (${a.shift_start}-${a.shift_end})`;
-
+        div.textContent = `${a.employee_name} (${a.start}-${a.end})`;
         cell.appendChild(div);
       });
 
