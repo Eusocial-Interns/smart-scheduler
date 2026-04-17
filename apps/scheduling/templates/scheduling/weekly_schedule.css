@@ -38,8 +38,28 @@
 }
 
 .assignment {
-  background: #e3f2fd;
   padding: 4px 6px;
   border-radius: 4px;
   font-size: 12px;
+  color: #222;
+}
+
+/* Morning Shift */
+.shift-morning {
+  background: #d4edda; 
+}
+
+/* Afternoon Shift*/
+.shift-afternoon {
+  background: #cce5ff; 
+}
+
+/* Evening Shift*/
+.shift-evening {
+  background: #e2d9f3; 
+}
+
+/* Night Shift */
+.shift-night {
+  background: #f8d7da; 
 }

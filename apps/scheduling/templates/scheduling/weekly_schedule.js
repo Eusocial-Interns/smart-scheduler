@@ -29,15 +29,15 @@ function mockData() {
       {
         role_name: "Server",
         days: {
-          0: [{ employee_name: "Stephen", start: "10:00", end: "18:00" }],
+          0: [{ employee_name: "Stephen", start: "21:00", end: "24:00" }],
           1: [{ employee_name: "Mohammed", start: "11:00", end: "19:00" }],
           2: [{ employee_name: "Stephen", start: "17:00", end: "22:00" }],
           3: [],
           4: [
             { employee_name: "Gabriel", start: "09:00", end: "17:00" },
             { employee_name: "Elizabeth", start: "09:00", end: "17:00" },
-            { employee_name: "Gabriel", start: "09:00", end: "17:00" },
-            { employee_name: "Elizabeth", start: "09:00", end: "17:00" }
+            { employee_name: "Gabriel", start: "17:00", end: "22:00" },
+            { employee_name: "Elizabeth", start: "12:00", end: "15:00" }
           ],
           5: [],
           6: []
@@ -62,8 +62,6 @@ function mockData() {
   });
 }
 
-
-
 function renderSchedule(data) {
   const grid = document.getElementById('scheduleGrid');
 
@@ -79,11 +77,13 @@ function renderSchedule(data) {
       const cell = document.createElement('div');
       cell.className = 'day-cell';
 
-      const assignments = role.days[day] || [];
+      const assignments = (role.days[day] || [])
+        .slice()
+        .sort((a, b) => a.start.localeCompare(b.start));
 
       assignments.forEach(a => {
         const div = document.createElement('div');
-        div.className = 'assignment';
+        div.className = `assignment ${getShiftClass(a.start)}`;
         div.textContent = `${a.employee_name} (${a.start}-${a.end})`;
         cell.appendChild(div);
       });
@@ -91,6 +91,15 @@ function renderSchedule(data) {
       grid.appendChild(cell);
     }
   });
+}
+
+function getShiftClass(startTime) {
+  const hour = parseInt(startTime.split(":")[0]);
+
+  if (hour < 12) return "shift-morning";
+  if (hour < 17) return "shift-afternoon";
+  if (hour < 21) return "shift-evening";
+  return "shift-night";
 }
 
 fetchData().then(data => {
