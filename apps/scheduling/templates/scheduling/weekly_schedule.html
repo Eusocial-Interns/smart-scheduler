@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -7,7 +8,7 @@
 <body>
 
 <div class="container" id="mainContainer">
-  <!-- Status Banner -->
+  
   <div id="statusBanner" class="status-banner draft-banner">
     <div>
       <strong>Status: <span id="statusLabel">DRAFT</span></strong>
@@ -19,14 +20,14 @@
     </div>
   </div>
 
-  <!-- Navigation Controls -->
+  
   <div class="nav-bar-week">
     <button class="nav-btn-week" onclick="changeWeek(-7)">◀ Previous Week</button>
     <div class="date-header" id="dateHeading">Loading...</div>
     <button class="nav-btn-week" onclick="changeWeek(7)">Next Week ▶</button>
   </div>
 
-  <!-- Schedule Table -->
+  
   <table class="schedule-table">
     <thead>
       <tr>
