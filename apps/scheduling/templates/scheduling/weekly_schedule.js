@@ -73,6 +73,42 @@ function mockData() {
   });
 }
 
+//Form
+fetchData().then(data => {
+  currentData = data;
+  initForm(data);
+  renderSchedule(data);
+});
+
+function initForm(data) {
+  const daySelect = document.getElementById("daySelect");
+  const roleSelect = document.getElementById("roleSelect");
+
+  
+  data.days.forEach((day, index) => {
+    const opt = document.createElement("option");
+    opt.value = index;
+    opt.textContent = day;
+    daySelect.appendChild(opt);
+  });
+
+  data.roles.forEach(role => {
+    const opt = document.createElement("option");
+    opt.value = role.role_name;
+    opt.textContent = role.role_name;
+    roleSelect.appendChild(opt);
+  });
+
+  daySelect.addEventListener("change", updateHoursInfo);
+  updateHoursInfo();
+
+  document
+    .getElementById("createShiftBtn")
+    .addEventListener("click", createShift);
+}
+
+
+
 //Render Schedule
 function renderSchedule(data) {
   const grid = document.getElementById('scheduleGrid');
