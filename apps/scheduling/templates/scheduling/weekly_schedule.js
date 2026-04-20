@@ -142,7 +142,78 @@ function validateShiftUI(day, start, end) {
   return null;
 }
 
+async function createShift() {
+  const day = parseInt(document.getElementById("daySelect").value);
+  const role = document.getElementById("roleSelect").value;
+  const start = document.getElementById("startTime").value;
+  const end = document.getElementById("endTime").value;
+  const notes = document.getElementById("notes").value;
+  const errorDiv = document.getElementById("errorMsg");
 
+    const uiError = validateShiftUI(day, start, end);
+
+  if (uiError) {
+    errorDiv.textContent = uiError;
+    return;
+  }
+
+  errorDiv.textContent = "";
+
+  try {
+    if (USE_MOCK) {
+    
+      const roleObj = currentData.roles.find(r => r.role_name === role);
+
+      roleObj.days[day].push({
+        employee_name: "Unassigned",
+        start,
+        end
+      });
+
+      rerender();
+      return;
+    }
+    
+    const res = await fetch('/api/v1/assignments/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ day, role, start, end, notes })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      errorDiv.textContent = err.message || "Invalid shift";
+      return;
+    }
+
+    
+    const updated = await fetchData();
+    currentData = updated;
+
+    rerender();
+
+  } catch (err) {
+    errorDiv.textContent = "Network error. Try again.";
+  }
+}
+
+//Rerender schedule
+function rerender() {
+  const grid = document.getElementById("scheduleGrid");
+
+  grid.innerHTML = `
+    <div class="header-cell role-header">Role</div>
+    <div class="header-cell">Mon</div>
+    <div class="header-cell">Tue</div>
+    <div class="header-cell">Wed</div>
+    <div class="header-cell">Thu</div>
+    <div class="header-cell">Fri</div>
+    <div class="header-cell">Sat</div>
+    <div class="header-cell">Sun</div>
+  `;
+
+  renderSchedule(currentData);
+}
 
 
 //Render Schedule
