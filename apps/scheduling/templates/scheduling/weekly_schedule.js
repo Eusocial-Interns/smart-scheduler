@@ -108,6 +108,42 @@ function initForm(data) {
 }
 
 
+function updateHoursInfo() {
+  const day = document.getElementById("daySelect").value;
+  const info = document.getElementById("hoursInfo");
+
+  const hours = currentData.operating_hours[day];
+
+  if (!hours) return;
+
+  info.textContent = `Open: ${formatTime(hours.open)} – Close: ${formatTime(hours.close)}`;
+
+  
+  const startInput = document.getElementById("startTime");
+  const endInput = document.getElementById("endTime");
+
+  startInput.min = hours.open;
+  startInput.max = hours.close;
+  endInput.min = hours.open;
+  endInput.max = hours.close;
+}
+
+function validateShiftUI(day, start, end) {
+  const hours = currentData.operating_hours[day];
+
+  if (!start || !end) return "Start and end time required";
+
+  if (start >= end) return "End time must be after start time";
+
+  if (hours && (start < hours.open || end > hours.close)) {
+    return `Outside operating hours (${formatTime(hours.open)}–${formatTime(hours.close)})`;
+  }
+
+  return null;
+}
+
+
+
 
 //Render Schedule
 function renderSchedule(data) {
