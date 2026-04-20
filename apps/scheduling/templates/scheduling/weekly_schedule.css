@@ -78,3 +78,39 @@
 .shift-night {
   background: #f8d7da; 
 }
+
+/* Schedule Form */
+
+.shift-form {
+  max-width: 400px;
+  padding: 16px;
+  border: 1px solid #ddd;
+  margin-bottom: 20px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.shift-form label {
+  display: block;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.shift-form input,
+.shift-form select,
+.shift-form textarea {
+  width: 100%;
+  padding: 6px;
+  margin-top: 4px;
+}
+
+.hours-info {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #555;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+}

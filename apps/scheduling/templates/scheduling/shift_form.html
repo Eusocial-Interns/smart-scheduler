@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="weekly_schedule.css">
+    <title>Form</title>
+</head>
+
+<body>
+
+    <div class="shift-form">
+    <h3>Create Shift</h3>
+
+    <label>Day</label>
+    <select id="daySelect"></select>
+
+    <label>Role</label>
+    <select id="roleSelect"></select>
+
+    <label>Start Time</label>
+    <input type="time" id="startTime">
+
+    <label>End Time</label>
+    <input type="time" id="endTime">
+
+    <div id="hoursInfo" class="hours-info"></div>
+
+    <label>Notes</label>
+    <textarea id="notes"></textarea>
+
+    <button id="createShiftBtn">Add Shift</button>
+
+    <div id="errorMsg" class="error"></div>
+    </div>
+
+</body>
+
+<script src="weekly_schedule.js"></script>
+
+</html>

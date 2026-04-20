@@ -1,23 +1,34 @@
 const USE_MOCK = true;
+let currentData = null;
 
 async function fetchData() {
     if (USE_MOCK) {
     return mockData();
   }
 
-  const [roles, employees, assignments] = await Promise.all([
+  const [roles, employees, assignments, schedule] = await Promise.all([
     fetch('/api/v1/roles/').then(res => res.json()),
     fetch('/api/v1/employees/').then(res => res.json()),
-    fetch('/api/v1/assignments/').then(res => res.json())
+    fetch('/api/v1/assignments/').then(res => res.json()),
+    fetch('/api/v1/schedule/').then(res => res.json())
   ]);
 
-  return { roles, employees, assignments };
+  return { roles, employees, assignments,schedule };
 }
 
 function mockData() {
   return Promise.resolve({
     week_start: "2026-04-13",
     days: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+    operating_hours: {
+      0: { open: "08:00", close: "22:00" },
+      1: { open: "08:00", close: "22:00" },
+      2: { open: "08:00", close: "22:00" },
+      3: { open: "08:00", close: "22:00" },
+      4: { open: "08:00", close: "23:00" },
+      5: { open: "09:00", close: "23:00" },
+      6: { open: "09:00", close: "21:00" }
+    },
     roles: [
       {
         role_name: "Manager",
@@ -62,17 +73,17 @@ function mockData() {
   });
 }
 
+//Render Schedule
 function renderSchedule(data) {
   const grid = document.getElementById('scheduleGrid');
 
   data.roles.forEach(role => {
-    // Role label
+    
     const roleCell = document.createElement('div');
     roleCell.className = 'role-cell';
     roleCell.textContent = role.role_name;
     grid.appendChild(roleCell);
 
-    // Days 0–6
     for (let day = 0; day < 7; day++) {
       const cell = document.createElement('div');
       cell.className = 'day-cell';
@@ -97,6 +108,7 @@ function renderSchedule(data) {
   });
 }
 
+//Helpers
 function getShiftClass(startTime) {
   const hour = parseInt(startTime.split(":")[0]);
 
@@ -109,7 +121,6 @@ function getShiftClass(startTime) {
 function formatTime(timeStr) {
   if (!timeStr) return "";
 
-  // handle edge case from your mock data
   if (timeStr === "24:00") return "12:00 AM";
 
   const [hourStr, minute] = timeStr.split(":");
