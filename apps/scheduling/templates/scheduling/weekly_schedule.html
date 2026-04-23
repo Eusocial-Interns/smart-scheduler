@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Weekly Schedule - Full-Stack</title>
+  <link rel="stylesheet" href="{% static 'scheduling/css/weekly_schedule.css' %}">
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+  
+  <div id="statusBanner" class="status-banner draft-banner">
+    <div>
+      <strong>Status: <span id="statusLabel">DRAFT</span></strong>
+      <div id="statusSubtext" style="font-size: 0.8rem; opacity: 0.8;">Visible to managers only.</div>
+    </div>
+    <div>
+      <button class="publish-btn" id="actionBtn" onclick="togglePublish()">Publish Week</button>
+      <span id="unpublishArea" style="display:none;" onclick="togglePublish()" class="unpublish-link">Set to Draft</span>
+    </div>
+  </div>
+
+  
+  <div class="nav-bar-week">
+    <button class="nav-btn-week" onclick="changeWeek(-7)">◀ Previous Week</button>
+    <div class="date-header" id="dateHeading">Loading...</div>
+    <button class="nav-btn-week" onclick="changeWeek(7)">Next Week ▶</button>
+  </div>
+
+  
+  <table class="schedule-table">
+    <thead>
+      <tr>
+        <th class="role-col">Role</th>
+        <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+      </tr>
+    </thead>
+    <tbody id="scheduleBody"></tbody>
+  </table>
+</div>
+
+<script src="{% static 'scheduling/js/weekly_schedule.js' %}"></script>
+</body>
+</html>

@@ -85,3 +85,9 @@ def announcements_view(request):
 
 def chat_view(request):
     return render(request, "scheduling/chat.html")
+
+def weekly_schedule_view(request):
+    return render(request, "scheduling/weekly_schedule.html")
+
+def weekly_schedule_test(request):
+    return render(request, "scheduling/publish_workflow.html")

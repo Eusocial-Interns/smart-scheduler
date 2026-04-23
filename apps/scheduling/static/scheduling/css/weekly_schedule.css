@@ -1,0 +1,129 @@
+body { 
+    font-family: 'Segoe UI', 
+    Tahoma, Geneva, 
+    Verdana, sans-serif; 
+    padding: 20px; 
+    color: #333; 
+    background: #f4f7f6; 
+}
+
+.container { max-width: 1100px; 
+        margin: 0 auto; 
+        background: white; 
+        padding: 30px; 
+        border-radius: 8px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+}
+    
+.status-banner { 
+      padding: 15px 25px; 
+      margin-bottom: 25px; 
+      border-radius: 6px; 
+      display: flex; 
+      justify-content: 
+      space-between; 
+      align-items: center;
+      transition: all 0.3s ease;
+}
+
+.draft-banner { 
+        background: #fffaf0; 
+        border: 1px solid #fbd38d; 
+        color: #7b341e; 
+}
+
+.published-banner { 
+        background: #f0fff4; 
+        border: 1px solid #9ae6b4; 
+        color: #22543d; 
+}
+    
+.publish-btn { 
+        background: #7b341e; 
+        color: white; 
+        padding: 10px 20px; 
+        border: none; 
+        border-radius: 5px; 
+        cursor: pointer; 
+        font-weight: 600; 
+}
+
+.unpublish-link { 
+    color: #e53e3e; 
+    cursor: pointer; 
+    font-size: 0.85rem; 
+    text-decoration: underline; 
+    margin-left: 15px; 
+}
+
+.nav-bar-week { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px; 
+}
+
+.nav-btn-week { 
+    background: #edf2f7; 
+    border: 1px solid #cbd5e0; 
+    padding: 6px 12px; 
+    border-radius: 4px; 
+    cursor: pointer; 
+}
+.date-header { 
+    font-size: 1.2rem; 
+    font-weight: 700; 
+    color: #2d3748; 
+}
+
+.schedule-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    table-layout: fixed; 
+}
+.schedule-table th, .schedule-table td { 
+    border: 1px solid #e2e8f0; 
+    padding: 12px; 
+    vertical-align: top; 
+}
+.role-col { 
+    background: #f8fafc; 
+    font-weight: bold; 
+    width: 120px; 
+}
+
+[data-coverage="under"] { 
+    background: #fff5f5; 
+    border-top: 3px solid #e53e3e; 
+}
+
+[data-coverage="full"] { 
+    background: #ffffff; 
+}
+    
+.badge { 
+    font-size: 0.7rem; 
+    font-weight: 800; 
+    padding: 2px 6px; 
+    border-radius: 4px; 
+    display: inline-block; 
+    margin-top: 8px; 
+}
+.badge-red { 
+    background: #feb2b2; 
+    color: #9b2c2c; 
+}
+.badge-green { 
+    background: #c6f6d5; 
+    color: #22543d; 
+}
+
+.staff-name { 
+    font-size: 0.85rem; 
+    color: #4a5568; 
+    min-height: 1.2em; 
+}
+
+.published-mode .schedule-table { 
+    border: 2px solid #38a169; 
+}
