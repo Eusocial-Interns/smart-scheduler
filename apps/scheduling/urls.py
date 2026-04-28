@@ -8,8 +8,8 @@ from .views import (
     AvailabilityViewSet,
     OperatingHoursViewSet,
     ScheduleNoteViewSet,
+    weekly_schedule_view,
 )
-
 # =========================
 # API Router
 # =========================
@@ -25,5 +25,7 @@ router.register(r'api/v1/schedule-notes', ScheduleNoteViewSet, basename='schedul
 # =========================
 urlpatterns = [
     path('', include(router.urls)),
+    path('api/v1/weekly-schedule/', weekly_schedule_view),
+
 ]
   

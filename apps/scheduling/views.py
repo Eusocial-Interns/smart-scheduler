@@ -1,4 +1,7 @@
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from apps.scheduling.services.weekly_schedule_service import build_weekly_schedule
 from rest_framework import viewsets
 from apps.scheduling.models import (
     Employee,
@@ -46,3 +49,9 @@ class OperatingHoursViewSet(viewsets.ModelViewSet):
 class ScheduleNoteViewSet(viewsets.ModelViewSet):
     queryset = ScheduleNote.objects.all()
     serializer_class = ScheduleNoteSerializer
+
+
+@api_view(["GET"])
+def weekly_schedule_view(request):
+    data = build_weekly_schedule()
+    return Response(data)
