@@ -71,3 +71,13 @@ class OperatingHours(models.Model):
 
     def __str__(self):
         return f"{self.get_day_of_week_display()} ({self.open_time} - {self.close_time})"
+    
+# Schedule Notes / Event Rows
+class ScheduleNote(models.Model):
+    day_of_week = models.IntegerField()
+    note = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Day {self.day_of_week}: {self.note[:20]}"

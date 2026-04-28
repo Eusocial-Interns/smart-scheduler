@@ -7,10 +7,7 @@ from .views import (
     ShiftViewSet,
     AvailabilityViewSet,
     OperatingHoursViewSet,
-    calendar_view,
-    profile_view,
-    announcements_view,
-    chat_view,
+    ScheduleNoteViewSet,
 )
 
 # =========================
@@ -22,16 +19,11 @@ router.register(r'api/v1/employees', EmployeeViewSet, basename='employee')
 router.register(r'api/v1/shifts', ShiftViewSet, basename='shift')
 router.register(r'api/v1/availability', AvailabilityViewSet, basename='availability')
 router.register(r'api/v1/operating-hours', OperatingHoursViewSet, basename='operating-hours')
-
+router.register(r'api/v1/schedule-notes', ScheduleNoteViewSet, basename='schedule-note')
 # =========================
 # URL Patterns
 # =========================
 urlpatterns = [
     path('', include(router.urls)),
-
-    # frontend views (leave these)
-    path('calendar/', calendar_view, name='calendar'),
-    path('profile/', profile_view, name='profile'),
-    path('announcements/', announcements_view, name='announcements'),
-    path('chat/', chat_view, name='chat'),
 ]
+  
