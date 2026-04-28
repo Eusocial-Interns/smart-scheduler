@@ -39,8 +39,8 @@ class Availability(models.Model):
 
 # Shifts
 class Shift(models.Model):
-    start_time = models.DateTimeField(null=True, blank=True)
-    end_time = models.DateTimeField(null=True, blank=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 # Assignments
@@ -50,3 +50,24 @@ class Assignment(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+# Operating Hours
+class OperatingHours(models.Model):
+    DAY_CHOICES = [
+        (0, "Monday"),
+        (1, "Tuesday"),
+        (2, "Wednesday"),
+        (3, "Thursday"),
+        (4, "Friday"),
+        (5, "Saturday"),
+        (6, "Sunday"),
+    ]
+
+    day_of_week = models.IntegerField(choices=DAY_CHOICES)
+    open_time = models.TimeField()
+    close_time = models.TimeField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.get_day_of_week_display()} ({self.open_time} - {self.close_time})"
