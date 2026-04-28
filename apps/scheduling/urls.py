@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     EmployeeViewSet,
+    ShiftViewSet,
     AvailabilityViewSet,
     OperatingHoursViewSet,
     calendar_view,
@@ -12,20 +13,23 @@ from .views import (
     chat_view,
 )
 
+# =========================
+# API Router
+# =========================
 router = DefaultRouter()
 
-# Working routes only
 router.register(r'api/v1/employees', EmployeeViewSet, basename='employee')
+router.register(r'api/v1/shifts', ShiftViewSet, basename='shift')
 router.register(r'api/v1/availability', AvailabilityViewSet, basename='availability')
 router.register(r'api/v1/operating-hours', OperatingHoursViewSet, basename='operating-hours')
 
-# 🚫 TEMPORARILY REMOVE SHIFTS (causing crash)
-# router.register(r'api/v1/shifts', ShiftViewSet, basename='shift')
-
+# =========================
+# URL Patterns
+# =========================
 urlpatterns = [
     path('', include(router.urls)),
 
-    # frontend views
+    # frontend views (leave these)
     path('calendar/', calendar_view, name='calendar'),
     path('profile/', profile_view, name='profile'),
     path('announcements/', announcements_view, name='announcements'),

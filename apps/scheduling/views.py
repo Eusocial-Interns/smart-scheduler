@@ -1,11 +1,15 @@
 
-from django.shortcuts import render
-from django.core.exceptions import ValidationError as DjangoValidationError
-
 from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError as DRFValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
 
-from apps.scheduling.models import Employee, Shift, Availability, OperatingHours
+from apps.scheduling.models import (
+    Employee,
+    Shift,
+    Availability,
+    OperatingHours,
+)
+
 from apps.scheduling.serializers import (
     EmployeeSerializer,
     ShiftSerializer,
@@ -14,14 +18,19 @@ from apps.scheduling.serializers import (
 )
 
 from apps.scheduling.services.shift_service import create_shift
-from apps.scheduling.services.availability_service import create_availability
 
 
+# =========================
+# Employee
+# =========================
 class EmployeeViewSet(viewsets.ModelViewSet):
     queryset = Employee.objects.all()
     serializer_class = EmployeeSerializer
 
 
+# =========================
+# Shift
+# =========================
 class ShiftViewSet(viewsets.ModelViewSet):
     queryset = Shift.objects.all()
     serializer_class = ShiftSerializer
@@ -30,34 +39,43 @@ class ShiftViewSet(viewsets.ModelViewSet):
         try:
             create_shift(serializer.validated_data)
         except DjangoValidationError as e:
-            raise DRFValidationError({"error": e.message})
+            # convert Django error → DRF error (so frontend sees clean JSON)
+            raise DRFValidationError(e.message)
 
 
+# =========================
+# Availability
+# =========================
 class AvailabilityViewSet(viewsets.ModelViewSet):
     queryset = Availability.objects.all()
     serializer_class = AvailabilitySerializer
 
-    def perform_create(self, serializer):
-        create_availability(serializer.validated_data)
 
-
+# =========================
+# Operating Hours
+# =========================
 class OperatingHoursViewSet(viewsets.ModelViewSet):
     queryset = OperatingHours.objects.all()
     serializer_class = OperatingHoursSerializer
 
 
-# keep these frontend views
+# =========================
+# Placeholder frontend views (leave these if your urls use them)
+# =========================
+from django.http import HttpResponse
+
+
 def calendar_view(request):
-    return render(request, "scheduling/calendar.html")
+    return HttpResponse("Calendar Page")
 
 
 def profile_view(request):
-    return render(request, "scheduling/profile.html")
+    return HttpResponse("Profile Page")
 
 
 def announcements_view(request):
-    return render(request, "scheduling/announcements.html")
+    return HttpResponse("Announcements Page")
 
 
 def chat_view(request):
-    return render(request, "scheduling/chat.html")
+    return HttpResponse("Chat Page")
