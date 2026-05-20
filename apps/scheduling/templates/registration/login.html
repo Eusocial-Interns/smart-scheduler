@@ -1,0 +1,39 @@
+{% extends 'scheduling/base.html' %}
+{% load static %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'scheduling/css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="profile-page">
+    <div class="profile-hero page-card">
+        <div>
+            <p class="section-eyebrow">Smart Scheduler</p>
+            <h1 class="section-title">Sign in to view schedules</h1>
+            <p class="section-copy">Managers and employees use the same workspace, with schedule visibility based on approval and publish status.</p>
+        </div>
+    </div>
+
+    <section class="page-card profile-section">
+        <form method="post" class="form-grid">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <div class="field field--full">
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                {{ form.username }}
+            </div>
+            <div class="field field--full">
+                <label for="{{ form.password.id_for_label }}">Password</label>
+                {{ form.password }}
+            </div>
+            <div class="field field--full" style="display:flex;flex-direction:column;gap:0.75rem">
+                <button class="button-primary" type="submit">Sign In</button>
+                <a href="{% url 'password_reset' %}" style="text-align:center;font-size:0.875rem;color:var(--muted)">Forgot your password?</a>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

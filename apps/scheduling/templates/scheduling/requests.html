@@ -1,0 +1,209 @@
+{% extends 'scheduling/base.html' %}
+{% load static %}
+
+{% block title %}Requests{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'scheduling/css/requests.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="requests-page">
+  <div class="requests-hero page-card">
+    <div>
+      <p class="section-eyebrow">Requests</p>
+      <h1 class="section-title">Schedule changes</h1>
+    </div>
+    <div class="requests-hero__meta">
+      <span class="pill" id="current-user-pill">Loading</span>
+    </div>
+  </div>
+
+  <!-- EMPLOYEE FORMS -->
+  <div id="employee-workspace">
+
+    <!-- AVAILABILITY CHANGE -->
+    <section class="req-panel page-card">
+      <div class="req-panel__header">
+        <div>
+          <p class="section-eyebrow">Availability</p>
+          <h2 class="req-panel__title">Request an availability change</h2>
+        </div>
+      </div>
+      <form id="availability-request-form">
+        <div class="day-toggle-grid">
+          <button type="button" class="day-chip" data-day="0">Mon</button>
+          <button type="button" class="day-chip" data-day="1">Tue</button>
+          <button type="button" class="day-chip" data-day="2">Wed</button>
+          <button type="button" class="day-chip" data-day="3">Thu</button>
+          <button type="button" class="day-chip" data-day="4">Fri</button>
+          <button type="button" class="day-chip" data-day="5">Sat</button>
+          <button type="button" class="day-chip" data-day="6">Sun</button>
+        </div>
+        <div class="avail-options">
+          <label class="avail-radio">
+            <input type="radio" name="avail-status" value="available" checked>
+            <span class="avail-radio__label avail-radio__label--available">Available</span>
+          </label>
+          <label class="avail-radio">
+            <input type="radio" name="avail-status" value="unavailable">
+            <span class="avail-radio__label avail-radio__label--unavailable">Unavailable</span>
+          </label>
+        </div>
+        <div class="field">
+          <label for="availability-effective">Effective from</label>
+          <input id="availability-effective" type="date" required>
+        </div>
+        <div class="field">
+          <label for="availability-reason">Reason <span class="field-optional">(optional)</span></label>
+          <textarea id="availability-reason" rows="2" placeholder="What changed?"></textarea>
+        </div>
+        <button class="button-primary" type="submit">Submit Availability Change</button>
+      </form>
+    </section>
+
+    <!-- TIME OFF -->
+    <section class="req-panel page-card">
+      <div class="req-panel__header">
+        <div>
+          <p class="section-eyebrow">Time Off</p>
+          <h2 class="req-panel__title">Request time off</h2>
+        </div>
+      </div>
+      <form id="time-off-form">
+        <div class="form-row">
+          <div class="field">
+            <label for="time-off-start">Start date</label>
+            <input id="time-off-start" type="date" required>
+          </div>
+          <div class="field">
+            <label for="time-off-end">End date</label>
+            <input id="time-off-end" type="date" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="time-off-reason">Reason <span class="field-optional">(optional)</span></label>
+          <textarea id="time-off-reason" rows="2" placeholder="Doctor appointment, family event…"></textarea>
+        </div>
+        <button class="button-primary" type="submit">Request Time Off</button>
+      </form>
+    </section>
+
+    <!-- SHIFT SWAPS -->
+    <section class="req-panel page-card">
+      <div class="req-panel__header">
+        <div>
+          <p class="section-eyebrow">Shift Swaps</p>
+          <h2 class="req-panel__title">Swap or give away a shift</h2>
+        </div>
+      </div>
+
+      <!-- SWAP TYPE TABS -->
+      <div class="swap-tabs">
+        <button class="swap-tab is-active" data-tab="swap">Trade shifts</button>
+        <button class="swap-tab" data-tab="giveaway">Give away</button>
+        <button class="swap-tab" data-tab="pickup">Pick up open shift</button>
+      </div>
+
+      <!-- TRADE -->
+      <form id="swap-form" class="swap-form">
+        <div class="field">
+          <label for="swap-my-shift">Your shift</label>
+          <select id="swap-my-shift" required>
+            <option value="">Select one of your shifts</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="swap-target-shift">Their shift</label>
+          <select id="swap-target-shift" required>
+            <option value="">Select a shift you want</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="swap-reason">Reason <span class="field-optional">(optional)</span></label>
+          <textarea id="swap-reason" rows="2" placeholder="Context for your teammate…"></textarea>
+        </div>
+        <button class="button-primary" type="submit">Propose Trade</button>
+      </form>
+
+      <!-- GIVEAWAY -->
+      <form id="giveaway-form" class="swap-form" hidden>
+        <div class="field">
+          <label for="giveaway-shift">Shift to give away</label>
+          <select id="giveaway-shift" required>
+            <option value="">Select one of your shifts</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="giveaway-target-employee">Give to <span class="field-optional">(optional — leave blank to open it to everyone)</span></label>
+          <select id="giveaway-target-employee">
+            <option value="">Anyone</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="giveaway-reason">Reason <span class="field-optional">(optional)</span></label>
+          <textarea id="giveaway-reason" rows="2" placeholder="Why can't you work it?"></textarea>
+        </div>
+        <button class="button-primary" type="submit">Post Giveaway</button>
+      </form>
+
+      <!-- PICKUP -->
+      <form id="pickup-form" class="swap-form" hidden>
+        <div class="field">
+          <label for="pickup-shift">Open shift to pick up</label>
+          <select id="pickup-shift" required>
+            <option value="">Select an open shift</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pickup-reason">Note <span class="field-optional">(optional)</span></label>
+          <textarea id="pickup-reason" rows="2" placeholder="Anything the manager should know?"></textarea>
+        </div>
+        <button class="button-primary" type="submit">Volunteer for Shift</button>
+      </form>
+    </section>
+
+    <!-- INCOMING SWAP REQUESTS (employee needs to accept) -->
+    <section class="req-panel page-card" id="incoming-swaps-section" hidden>
+      <div class="req-panel__header">
+        <div>
+          <p class="section-eyebrow">Action Required</p>
+          <h2 class="req-panel__title">Swap requests waiting for you</h2>
+        </div>
+      </div>
+      <div id="incoming-swaps-list" class="req-list"></div>
+    </section>
+
+  </div>
+
+  <!-- MANAGER QUEUE -->
+  <section class="req-panel page-card" id="manager-workspace" hidden>
+    <div class="req-panel__header">
+      <div>
+        <p class="section-eyebrow">Manager Queue</p>
+        <h2 class="req-panel__title">Pending approvals</h2>
+      </div>
+      <span class="pill" id="pending-count">0 pending</span>
+    </div>
+    <div class="req-list" id="manager-request-list"></div>
+  </section>
+
+  <!-- MY REQUEST HISTORY -->
+  <section class="req-panel page-card">
+    <div class="req-panel__header">
+      <div>
+        <p class="section-eyebrow">My Requests</p>
+        <h2 class="req-panel__title">Request history</h2>
+      </div>
+    </div>
+    <div class="req-list" id="my-request-list"></div>
+  </section>
+
+</section>
+
+<div class="status-banner" id="requests-status"></div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'scheduling/js/requests.js' %}"></script>
+{% endblock %}

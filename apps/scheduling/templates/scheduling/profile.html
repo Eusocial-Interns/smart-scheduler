@@ -11,41 +11,73 @@
 <section class="profile-page">
     <div class="profile-hero page-card">
         <div class="profile-hero__identity">
-            <div class="profile-avatar">G</div>
+            <div class="profile-avatar" id="profile-avatar">?</div>
             <div>
-                <p class="section-eyebrow">Employee Snapshot</p>
-                <h1 class="section-title">Guest Team Member</h1>
-                <p class="section-copy">A polished shell for future employee profile data, ratings, and personal contact details.</p>
+                <p class="section-eyebrow" id="profile-role-label">Loading</p>
+                <h1 class="section-title" id="profile-name">—</h1>
+                <p class="section-copy" id="profile-email">—</p>
             </div>
         </div>
-        <div class="profile-hero__badges">
-            <span class="pill">Front of House</span>
-            <span class="pill">5 star rating</span>
+        <div class="profile-hero__actions">
+            <div class="profile-hero__badges" id="profile-badges"></div>
+            <a href="{% url 'password_reset' %}" class="button-ghost profile-logout">Reset Password</a>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="button-ghost profile-logout" type="submit">Log Out</button>
+            </form>
         </div>
     </div>
 
     <div class="profile-grid">
         <section class="page-card profile-section">
             <p class="section-eyebrow">Profile Information</p>
-            <div class="profile-info-grid">
-                <div><span>Employee ID</span><strong>000000</strong></div>
-                <div><span>Primary Phone</span><strong>734-000-0000</strong></div>
-                <div><span>Mobile Phone</span><strong>734-000-0000</strong></div>
-                <div><span>Primary Address</span><strong>123 Main Street, Detroit, MI</strong></div>
-                <div><span>Secondary Address</span><strong>Apartment / Suite details</strong></div>
-                <div><span>Emergency Contact</span><strong>On file</strong></div>
+            <div class="profile-info-grid" id="profile-info-grid">
+                <div><span>Phone</span><strong id="profile-phone">—</strong></div>
+                <div><span>Email</span><strong id="profile-email-field">—</strong></div>
             </div>
         </section>
 
         <section class="page-card profile-section">
             <p class="section-eyebrow">Recognition</p>
             <div class="rating-card">
-                <div class="rating-card__stars" aria-label="5 out of 5 stars">★★★★★</div>
+                <div class="rating-card__stars" aria-label="Stars">★★★★★</div>
                 <h2>Star Rating Details</h2>
-                <p class="section-copy">This section is ready for dynamic performance notes, review history, and role-based achievements.</p>
-                <button class="button-primary" type="button">View Rating Breakdown</button>
+                <p class="section-copy">Performance notes, review history, and role-based achievements coming soon.</p>
             </div>
         </section>
     </div>
 </section>
+{% endblock %}
+
+{% block page_js %}
+<script>
+(async () => {
+    function getCsrf() {
+        return document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? "";
+    }
+
+    try {
+        const resp = await fetch("/api/v1/employees/me/", {
+            headers: { "X-CSRFToken": getCsrf() },
+            credentials: "same-origin",
+        });
+        if (!resp.ok) return;
+        const emp = await resp.json();
+
+        const initials = (emp.name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+        document.getElementById("profile-avatar").textContent = initials;
+        document.getElementById("profile-name").textContent = emp.name || "—";
+        document.getElementById("profile-role-label").textContent =
+            emp.account_type === "manager" ? "Manager" : "Employee";
+        document.getElementById("profile-email").textContent = emp.email || "";
+        document.getElementById("profile-phone").textContent = emp.phone_number || "Not on file";
+        document.getElementById("profile-email-field").textContent = emp.email || "—";
+
+        const badges = document.getElementById("profile-badges");
+        if (emp.primary_role_name) {
+            badges.innerHTML = `<span class="pill">${emp.primary_role_name}</span>`;
+        }
+    } catch (_) {}
+})();
+</script>
 {% endblock %}

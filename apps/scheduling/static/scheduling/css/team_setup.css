@@ -1,0 +1,665 @@
+.team-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.team-hero,
+.setup-panel {
+    padding: 1.35rem;
+}
+
+.team-hero,
+.setup-panel__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.setup-grid {
+    display: grid;
+    grid-template-columns: 0.8fr 1fr;
+    gap: 1.25rem;
+}
+
+.setup-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.setup-panel h2 {
+    margin: 0;
+}
+
+.chip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+/* Roles grouped by department */
+.role-dept-group {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.role-dept-group__header {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.role-dept-group__header--foh {
+    background: var(--dept-foh-bg);
+    color: var(--dept-foh-text);
+    border-bottom: 1px solid var(--dept-foh-border);
+}
+
+.role-dept-group__header--boh {
+    background: var(--dept-boh-bg);
+    color: var(--dept-boh-text);
+    border-bottom: 1px solid var(--dept-boh-border);
+}
+
+.role-dept-group__header--management {
+    background: var(--dept-mgmt-bg);
+    color: var(--dept-mgmt-text);
+    border-bottom: 1px solid var(--dept-mgmt-border);
+}
+
+.role-dept-group__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.52);
+}
+
+/* Department badge (label pill) */
+.dept-badge {
+    display: inline-block;
+    padding: 0.18rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dept-badge--foh {
+    background: var(--dept-foh-bg);
+    border: 1px solid var(--dept-foh-border);
+    color: var(--dept-foh-text);
+}
+
+.dept-badge--boh {
+    background: var(--dept-boh-bg);
+    border: 1px solid var(--dept-boh-border);
+    color: var(--dept-boh-text);
+}
+
+.dept-badge--management {
+    background: var(--dept-mgmt-bg);
+    border: 1px solid var(--dept-mgmt-border);
+    color: var(--dept-mgmt-text);
+}
+
+/* Chip coloured by department */
+.dept-chip--foh {
+    background: var(--dept-foh-bg);
+    border-color: var(--dept-foh-border);
+    color: var(--dept-foh-text);
+}
+
+.dept-chip--boh {
+    background: var(--dept-boh-bg);
+    border-color: var(--dept-boh-border);
+    color: var(--dept-boh-text);
+}
+
+.dept-chip--management {
+    background: var(--dept-mgmt-bg);
+    border-color: var(--dept-mgmt-border);
+    color: var(--dept-mgmt-text);
+}
+
+.role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.5rem 0.55rem 0.5rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(75, 58, 44, 0.1);
+    color: var(--accent-deep);
+    font-weight: 700;
+}
+
+.role-chip--primary {
+    background: rgba(201, 108, 43, 0.14);
+    border-color: rgba(201, 108, 43, 0.38);
+}
+
+.role-chip--secondary {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(75, 58, 44, 0.14);
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.role-chip__delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(75, 58, 44, 0.12);
+    color: var(--ink);
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.role-chip__delete:hover {
+    background: rgba(200, 50, 30, 0.18);
+    color: #c0392b;
+}
+
+.availability-builder {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.availability-builder__days {
+    grid-column: 1 / -1;
+}
+
+.availability-builder__submit {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-start;
+}
+
+/* Worker role groups */
+.worker-role-group {
+    grid-column: 1 / -1;
+    border: 1px solid rgba(75, 58, 44, 0.1);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.worker-role-group__header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem;
+    background: rgba(255, 255, 255, 0.72);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 120ms;
+}
+
+.worker-role-group__header:hover {
+    background: rgba(255, 255, 255, 0.96);
+}
+
+/* Department wrapper that contains role sub-groups */
+.worker-dept-section {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    grid-column: 1 / -1;
+}
+
+.worker-dept-section__header {
+    padding: 0.65rem 1.1rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.55);
+    border-bottom: 1px solid var(--line);
+}
+
+.worker-dept-section__header--foh {
+    background: var(--dept-foh-bg);
+    color: var(--dept-foh-text);
+    border-bottom-color: var(--dept-foh-border);
+}
+
+.worker-dept-section__header--boh {
+    background: var(--dept-boh-bg);
+    color: var(--dept-boh-text);
+    border-bottom-color: var(--dept-boh-border);
+}
+
+.worker-dept-section__header--management {
+    background: var(--dept-mgmt-bg);
+    color: var(--dept-mgmt-text);
+    border-bottom-color: var(--dept-mgmt-border);
+}
+
+.worker-dept-section__body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Role groups nested inside a dept section lose their own border/radius */
+.worker-dept-section__body .worker-role-group {
+    border: none;
+    border-bottom: 1px solid rgba(75, 58, 44, 0.07);
+    border-radius: 0;
+}
+
+.worker-dept-section__body .worker-role-group:last-child {
+    border-bottom: none;
+}
+
+.worker-role-group__name {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--accent-deep);
+}
+
+.worker-role-group__count {
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+.worker-role-group__chevron {
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: transform 200ms ease;
+}
+
+.worker-role-group.is-open .worker-role-group__chevron {
+    transform: rotate(180deg);
+}
+
+.worker-role-group__body {
+    border-top: 1px solid rgba(75, 58, 44, 0.08);
+    padding: 1rem;
+    background: rgba(255, 248, 241, 0.45);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.employee-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.employee-card {
+    align-self: start;
+    padding: 1.1rem;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+}
+
+.employee-card__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 0.1rem;
+}
+
+.employee-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.employee-card__header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.employee-card__edit-btn {
+    font-size: 0.78rem;
+    padding: 0.3rem 0.7rem;
+    opacity: 0.6;
+    transition: opacity 140ms;
+}
+
+.employee-card:hover .employee-card__edit-btn {
+    opacity: 1;
+}
+
+.employee-card h3 {
+    margin: 0 0 0.25rem;
+}
+
+.employee-card small {
+    color: var(--muted);
+}
+
+.account-type-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: var(--dept-mgmt-bg);
+    border: 1px solid var(--dept-mgmt-border);
+    color: var(--dept-mgmt-text);
+    vertical-align: middle;
+    margin-left: 0.4rem;
+    letter-spacing: 0.02em;
+}
+
+.employee-role-editor {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.65rem;
+    margin: 1rem 0;
+}
+
+.employee-role-editor select {
+    width: 100%;
+    padding: 0.82rem 0.95rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(75, 58, 44, 0.14);
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--ink);
+    font: inherit;
+}
+
+.button-secondary.is-dirty {
+    box-shadow: 0 0 0 3px rgba(201, 108, 43, 0.18);
+}
+
+.employee-card__role-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}
+
+.employee-card__no-role {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.employee-assigned-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0.75rem;
+}
+
+.assigned-role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(201, 108, 43, 0.1);
+    border: 1px solid rgba(201, 108, 43, 0.25);
+    color: var(--accent-deep);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.assigned-role-chip__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(75, 58, 44, 0.12);
+    color: var(--ink);
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.assigned-role-chip__remove:hover {
+    background: rgba(200, 50, 30, 0.18);
+    color: #c0392b;
+}
+
+.assigned-role-chip--primary {
+    background: rgba(201, 108, 43, 0.13);
+    border-color: rgba(201, 108, 43, 0.35);
+}
+
+/* Primary / Secondary labeled rows on employee card */
+.employee-role-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin: 0.65rem 0;
+}
+
+.employee-role-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.employee-role-row__label {
+    flex-shrink: 0;
+    width: 5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    padding-top: 0.4rem;
+}
+
+.employee-role-row__chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Role toggle buttons in create / edit forms */
+.role-toggle-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: 2.2rem;
+    align-items: center;
+}
+
+.role-toggle {
+    padding: 0.38rem 0.75rem;
+    border-radius: 999px;
+    border: 1.5px solid rgba(75, 58, 44, 0.18);
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.role-toggle:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(201, 108, 43, 0.35);
+}
+
+.role-toggle.is-selected {
+    background: rgba(201, 108, 43, 0.15);
+    border-color: rgba(201, 108, 43, 0.5);
+    color: var(--accent-deep);
+    font-weight: 600;
+}
+
+.availability-list {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.employee-availability-card {
+    margin-top: 0.85rem;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(75, 58, 44, 0.1);
+    background: rgba(255, 255, 255, 0.58);
+    overflow: hidden;
+}
+
+.employee-availability-card__toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.85rem 0.9rem;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.employee-availability-card__toggle strong,
+.employee-availability-card__toggle small {
+    display: block;
+}
+
+.employee-availability-card__toggle small {
+    margin-top: 0.12rem;
+    color: var(--muted);
+}
+
+.employee-availability-card__icon {
+    width: 1.65rem;
+    height: 1.65rem;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: rgba(201, 108, 43, 0.12);
+    color: var(--accent-deep);
+    font-weight: 800;
+}
+
+.employee-availability-card__body {
+    padding: 0 0.9rem 0.9rem;
+}
+
+.employee-availability-card__body[hidden] {
+    display: none;
+}
+
+.employee-availability-card.is-open {
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.availability-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(75, 58, 44, 0.1);
+}
+
+.availability-row strong,
+.availability-row span {
+    display: block;
+}
+
+.availability-row span {
+    margin-top: 0.15rem;
+    color: var(--muted);
+}
+
+/* EMPLOYEE EDIT MODAL */
+.emp-edit-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(38, 33, 29, 0.45);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    padding: 1.25rem;
+}
+
+.emp-edit-modal[hidden] {
+    display: none;
+}
+
+.emp-edit-dialog {
+    width: min(480px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    padding: 1.5rem;
+}
+
+.emp-edit-dialog__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.emp-edit-dialog__head h3 {
+    margin: 0;
+}
+
+.emp-edit-dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+}
+
+@media (max-width: 1120px) {
+    .setup-grid,
+    .employee-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .team-hero,
+    .setup-panel__header,
+    .employee-card__header,
+    .employee-role-editor,
+    .availability-row {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+    }
+}

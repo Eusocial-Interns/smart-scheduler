@@ -1,0 +1,250 @@
+{% extends 'scheduling/base.html' %}
+{% load static %}
+
+{% block title %}Weekly Schedule{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'scheduling/css/weekly_schedule.css' %}?v=20260519h">
+{% endblock %}
+
+{% block content %}
+<section class="weekly-page">
+    <div class="weekly-hero page-card">
+        <div>
+            <p class="section-eyebrow" id="weekly-eyebrow">Schedule</p>
+            <h1 class="section-title" id="weekly-title">Your Week</h1>
+            <p id="weekly-copy"></p>
+        </div>
+        <div class="weekly-hero__actions">
+            <div class="week-nav">
+                <button class="week-nav__arrow" id="previous-week" type="button" aria-label="Previous week">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button class="week-nav__today" id="current-week" type="button">This week</button>
+                <button class="week-nav__arrow" id="next-week" type="button" aria-label="Next week">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+            <div class="weekly-hero__ctrl">
+                <button class="button-primary" id="generate-draft" type="button" hidden>Generate Draft</button>
+                <button class="button-ghost" id="copy-last-week" type="button" hidden>Copy Last Week</button>
+                <button class="button-secondary" id="publish-week" type="button" hidden>Publish</button>
+            </div>
+        </div>
+    </div>
+
+    <section class="workflow-strip page-card" id="manager-workflow" hidden>
+        <div class="workflow-step">
+            <span>1</span>
+            <strong>Coverage</strong>
+            <small>Preset how many people arrive for each service.</small>
+        </div>
+        <div class="workflow-step">
+            <span>2</span>
+            <strong>Draft</strong>
+            <small>Fill shifts from approved availability.</small>
+        </div>
+        <div class="workflow-step">
+            <span>3</span>
+            <strong>Publish</strong>
+            <small>Employees see only the final schedule.</small>
+        </div>
+    </section>
+
+    <div class="weekly-toolbar page-card">
+        <div class="weekly-toolbar__heading">
+            <p class="section-eyebrow">Viewing Week</p>
+            <h2 class ='week-range'id="week-range">Loading schedule...</h2>
+        </div>
+        <div class="dept-tabs" id="dept-tabs" hidden>
+            <button class="dept-tab is-active" type="button" data-dept="">All</button>
+            <button class="dept-tab dept-tab--foh" type="button" data-dept="foh">Front of House</button>
+            <button class="dept-tab dept-tab--boh" type="button" data-dept="boh">Back of House</button>
+            <button class="dept-tab dept-tab--management" type="button" data-dept="management">Management</button>
+        </div>
+        <div class="weekly-toolbar__meta">
+            <span class="pill" id="schedule-status" hidden></span>
+            <div class="weekly-toolbar__summary" id="coverage-summary" hidden>
+                Generate a draft to see coverage gaps.
+            </div>
+        </div>
+    </div>
+
+    <section class="closed-days-panel page-card" id="closed-days-panel" hidden>
+        <div>
+            <p class="section-eyebrow">Exceptions</p>
+            <h2>Closed days this week</h2>
+            <p class="section-copy">Toggle any day the restaurant won't be open. Closed days are skipped when generating a draft.</p>
+        </div>
+        <div class="closed-day-toggles" id="closed-day-toggles"></div>
+        <div class="closed-day-note-row" id="closed-day-note-row" hidden>
+            <input class="closed-day-note-input" id="closed-day-note-input" type="text" placeholder="Reason (optional, e.g. Holiday)">
+            <button class="button-primary" id="closed-day-note-save" type="button">Save note</button>
+        </div>
+    </section>
+
+    <section class="staffing-requirements page-card" id="staffing-requirements-panel" hidden>
+        <div>
+            <p class="section-eyebrow">Coverage Presets</p>
+            <h2>Arrival slots by role</h2>
+            <p class="section-copy">
+                Save one line for each arrival time. Drafts rebuild from these slots every time you generate.
+            </p>
+        </div>
+        <form id="staffing-requirement-form" class="form-grid">
+            <div class="field">
+                <label for="requirement-title">Service</label>
+                <select id="requirement-title" required></select>
+            </div>
+            <div class="field">
+                <label for="requirement-role">Role</label> 
+                <select id="requirement-role" required></select>
+            </div>
+            <div class="field field--full">
+                <label>Days</label>
+                <div class="day-picker">
+                    <div class="day-picker__days" id="requirement-day-buttons"></div>
+                    <div class="day-picker__shortcuts">
+                        <button class="button-ghost" type="button" id="day-shortcut-weekdays">Weekdays</button>
+                        <button class="button-ghost" type="button" id="day-shortcut-weekend">Weekend</button>
+                        <button class="button-ghost" type="button" id="day-shortcut-all">Every day</button>
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <label for="requirement-start">Arrival</label>
+                <select id="requirement-start" class="time-select" required></select>
+            </div>
+            <div class="field">
+                <label for="requirement-end">End time <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+                <select id="requirement-end" class="time-select time-select--optional"></select>
+            </div>
+            <div class="field">
+                <label for="requirement-count">Needed at this time</label>
+                <input id="requirement-count" type="number" min="1" value="1" required>
+            </div>
+            <div class="field field--full">
+                <button class="button-primary" type="submit">Save Arrival Slot</button>
+            </div>
+        </form>
+        <div class="requirement-list" id="requirement-list"></div>
+    </section>
+
+    <section class="weekly-board page-card">
+        <div class="weekly-grid" id="weekly-grid">
+            <div class="weekly-loading">Loading weekly schedule...</div>
+        </div>
+    </section>
+
+    <section class="employee-bench page-card" id="employee-bench-panel" hidden>
+        <div>
+            <p class="section-eyebrow">Employees</p>
+            <h2>Drag employees into a shift</h2>
+        </div>
+        <div class="employee-bench__list" id="employee-bench-list"></div>
+    </section>
+
+    <div class="req-edit-modal" id="req-edit-modal" hidden>
+        <form class="req-edit-dialog form-grid" id="req-edit-form">
+            <div class="field field--full req-edit-dialog__head">
+                <p class="section-eyebrow">Coverage Preset</p>
+                <h2 id="req-edit-heading">Edit Preset</h2>
+            </div>
+            <div class="field">
+                <label for="req-edit-service">Service</label>
+                <select id="req-edit-service" required></select>
+            </div>
+            <div class="field">
+                <label for="req-edit-role">Role</label>
+                <select id="req-edit-role" required></select>
+            </div>
+            <div class="field field--full">
+                <label>Days</label>
+                <div class="day-picker">
+                    <div class="day-picker__days" id="req-edit-days"></div>
+                    <div class="day-picker__shortcuts">
+                        <button class="button-ghost" type="button" id="req-edit-weekdays">Weekdays</button>
+                        <button class="button-ghost" type="button" id="req-edit-weekend">Weekend</button>
+                        <button class="button-ghost" type="button" id="req-edit-all">Every day</button>
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <label for="req-edit-start">Arrival</label>
+                <select id="req-edit-start" class="time-select" required></select>
+            </div>
+            <div class="field">
+                <label for="req-edit-end">End time <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+                <select id="req-edit-end" class="time-select time-select--optional"></select>
+            </div>
+            <div class="field">
+                <label for="req-edit-count">Needed</label>
+                <input id="req-edit-count" type="number" min="1" value="1" required>
+            </div>
+            <div class="req-edit-dialog__actions field--full">
+                <button class="button-ghost req-edit-dialog__remove" id="req-edit-delete" type="button">Remove preset</button>
+                <button class="button-ghost" id="req-edit-cancel" type="button">Cancel</button>
+                <button class="button-primary" type="submit">Save changes</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="shift-edit-modal" id="shift-edit-modal" hidden>
+        <form class="shift-edit-dialog" id="shift-edit-form">
+            <div>
+                <p class="section-eyebrow">Edit Shift</p>
+                <h2 id="shift-edit-employee">Employee shift</h2>
+            </div>
+            <div class="field">
+                <label for="shift-edit-service">Service</label>
+                <select id="shift-edit-service" required></select>
+            </div>
+            <div class="field">
+                <label for="shift-edit-arrival">Arrival</label>
+                <input id="shift-edit-arrival" type="time" required>
+            </div>
+            <div class="shift-edit-dialog__actions">
+                <button class="button-ghost shift-edit-dialog__remove" id="shift-edit-delete" type="button" hidden>Remove</button>
+                <button class="button-ghost" id="shift-edit-cancel" type="button">Cancel</button>
+                <button class="button-primary" type="submit">Save Shift</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- SLOT FILL MODAL (manager assigns employee to open slot) -->
+    <div class="shift-edit-modal" id="slot-fill-modal" hidden>
+        <div class="shift-edit-dialog">
+            <div>
+                <p class="section-eyebrow">Open Slot</p>
+                <h2 id="slot-fill-heading">Assign an employee</h2>
+            </div>
+            <p id="slot-fill-shift-meta" style="margin:.2rem 0 1rem;font-size:.85rem;color:var(--muted)"></p>
+            <div id="slot-fill-list" style="display:flex;flex-direction:column;gap:.5rem;max-height:18rem;overflow-y:auto;"></div>
+            <div class="shift-edit-dialog__actions" style="margin-top:1rem">
+                <button class="button-ghost" id="slot-fill-cancel" type="button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UNAVAILABILITY MODAL — shown when a force-assign attempt is needed -->
+    <div class="shift-edit-modal" id="unavailability-modal" hidden>
+        <div class="shift-edit-dialog">
+            <div>
+                <p class="section-eyebrow">Scheduling conflict</p>
+                <h2 id="unavailability-employee-name">Employee</h2>
+            </div>
+            <p id="unavailability-detail" style="margin:.25rem 0 1.25rem;color:var(--muted);font-size:.9rem"></p>
+            <div class="shift-edit-dialog__actions">
+                <button class="button-ghost" id="unavailability-cancel" type="button">Cancel</button>
+                <button class="button-primary" id="unavailability-force" type="button">Add to schedule anyway</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-banner" id="weekly-status"></div>
+</section>
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'scheduling/js/weekly_schedule.js' %}?v=20260519q"></script>
+{% endblock %}

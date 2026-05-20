@@ -1,0 +1,178 @@
+{% extends 'scheduling/base.html' %}
+{% load static %}
+
+{% block title %}Team Setup{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'scheduling/css/team_setup.css' %}?v=20260519l">
+{% endblock %}
+
+{% block content %}
+<section class="team-page">
+    <div class="team-hero page-card">
+        <div>
+            <p class="section-eyebrow">Team Setup</p>
+            <h1 class="section-title">Employees, roles, and availability</h1>
+        </div>
+        <span class="pill" id="team-user-pill">Loading</span>
+    </div>
+
+    <section class="setup-grid">
+        <form class="setup-panel page-card" id="role-form">
+            <div>
+                <p class="section-eyebrow">Job Types</p>
+                <h2>Roles</h2>
+            </div>
+            <div class="field">
+                <label for="role-name">Role name</label>
+                <input id="role-name" type="text" placeholder="Server, Host, Grill, Pantry" required>
+            </div>
+            <div class="field">
+                <label for="role-department">Department</label>
+                <select id="role-department">
+                    <option value="foh">Front of House</option>
+                    <option value="boh">Back of House</option>
+                    <option value="management">Management</option>
+                </select>
+            </div>
+            <button class="button-primary" type="submit">Add Role</button>
+            <div class="chip-list" id="role-list"></div>
+        </form>
+
+        <form class="setup-panel page-card" id="employee-form">
+            <div>
+                <p class="section-eyebrow">Employees</p>
+                <h2>Add employee</h2>
+                <p class="section-copy">Their email becomes their login. First password: 123456789.</p>
+            </div>
+            <div class="field">
+                <label for="employee-name">Name</label>
+                <input id="employee-name" type="text" placeholder="Adriana Lopez" required>
+            </div>
+            <div class="field">
+                <label for="employee-email">Email</label>
+                <input id="employee-email" type="email" placeholder="adriana@example.com" required>
+            </div>
+            <div class="field">
+                <label for="employee-phone">Phone number</label>
+                <input id="employee-phone" type="tel" placeholder="734-555-0100">
+            </div>
+            <div class="field">
+                <label for="employee-account-type">Account type</label>
+                <select id="employee-account-type">
+                    <option value="employee">Employee</option>
+                    <option value="manager">Manager</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="employee-role">Primary role</label>
+                <select id="employee-role">
+                    <option value="">Select a role</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Secondary roles <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+                <div class="role-toggle-group" id="new-emp-secondary-roles"></div>
+            </div>
+            <div class="field">
+                <label for="employee-desired-days">Days per week (target) <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+                <input id="employee-desired-days" type="number" min="1" max="7" placeholder="e.g. 4">
+            </div>
+            <button class="button-primary" type="submit">Add Employee</button>
+        </form>
+    </section>
+
+    <section class="setup-panel page-card">
+        <div class="setup-panel__header">
+            <div>
+                <p class="section-eyebrow">Availability</p>
+                <h2>Approved weekly availability</h2>
+            </div>
+            <span class="pill">Manager controlled</span>
+        </div>
+
+        <form class="availability-builder" id="availability-form">
+            <div class="field">
+                <label for="availability-employee">Employee</label>
+                <select id="availability-employee" required></select>
+            </div>
+            <div class="field">
+                <label for="availability-status">Type</label>
+                <select id="availability-status">
+                    <option value="available">Available</option>
+                    <option value="preferred">Preferred</option>
+                </select>
+            </div>
+            <div class="field availability-builder__days">
+                <label>Days</label>
+                <div class="day-picker">
+                    <div class="day-picker__days" id="availability-day-buttons"></div>
+                    <div class="day-picker__shortcuts">
+                        <button class="button-ghost" type="button" id="avail-shortcut-weekdays">Weekdays</button>
+                        <button class="button-ghost" type="button" id="avail-shortcut-weekend">Weekend</button>
+                        <button class="button-ghost" type="button" id="avail-shortcut-all">Every day</button>
+                    </div>
+                </div>
+            </div>
+            <div class="availability-builder__submit">
+                <button class="button-primary" type="submit">Save Availability</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="employee-list" id="employee-list"></section>
+
+    <div class="status-banner" id="team-status"></div>
+</section>
+
+<div class="emp-edit-modal" id="employee-edit-modal" hidden>
+    <div class="emp-edit-dialog page-card">
+        <div class="emp-edit-dialog__head">
+            <h3>Edit employee</h3>
+            <button class="button-ghost" type="button" id="emp-edit-cancel">Cancel</button>
+        </div>
+        <form id="employee-edit-form">
+            <div class="field">
+                <label for="edit-emp-name">Name</label>
+                <input id="edit-emp-name" type="text" required>
+            </div>
+            <div class="field">
+                <label for="edit-emp-email">Email</label>
+                <input id="edit-emp-email" type="email" required>
+            </div>
+            <div class="field">
+                <label for="edit-emp-phone">Phone number</label>
+                <input id="edit-emp-phone" type="tel" placeholder="734-555-0100">
+            </div>
+            <div class="field">
+                <label for="edit-emp-account-type">Account type</label>
+                <select id="edit-emp-account-type">
+                    <option value="employee">Employee</option>
+                    <option value="manager">Manager</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="edit-emp-primary-role">Primary role</label>
+                <select id="edit-emp-primary-role">
+                    <option value="">No role</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Secondary roles <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+                <div class="role-toggle-group" id="edit-emp-secondary-roles"></div>
+            </div>
+            <div class="field">
+                <label for="edit-emp-desired-days">Days per week (target) <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+                <input id="edit-emp-desired-days" type="number" min="1" max="7" placeholder="e.g. 4">
+            </div>
+            <div class="emp-edit-dialog__actions">
+                <button class="button-primary" type="submit">Save changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'scheduling/js/team_setup.js' %}?v=20260519n"></script>
+{% endblock %}

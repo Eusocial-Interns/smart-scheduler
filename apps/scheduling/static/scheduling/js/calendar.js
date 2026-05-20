@@ -1,602 +1,614 @@
-const monthLabel = document.getElementById("monthAndYear");
-const monthSelect = document.getElementById("month");
-const yearSelect = document.getElementById("year");
-const calendarGrid = document.getElementById("calendar-grid");
-const selectedDayTitle = document.getElementById("selected-day-title");
-const selectedDayShifts = document.getElementById("selected-day-shifts");
-const assignmentShift = document.getElementById("assignment-shift");
-const assignmentEmployee = document.getElementById("assignment-employee");
-const assignmentForm = document.getElementById("assignment-form");
-const shiftForm = document.getElementById("shift-form");
-const shiftModal = document.getElementById("shift-modal");
-const employeeForm = document.getElementById("employee-form");
-const employeeModal = document.getElementById("employee-modal");
-const employeeRoster = document.getElementById("employee-roster");
-const calendarStatus = document.getElementById("calendar-status");
-const summaryLabel = document.getElementById("calendar-summary");
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-const state = {
-    today: new Date(),
-    currentMonth: new Date().getMonth(),
-    currentYear: new Date().getFullYear(),
-    selectedDateKey: null,
-    shifts: [],
-    employees: [],
-    roles: [],
-    assignments: [],
+let currentRole = null;
+let activeShift = null;
+
+async function api(url, options = {}) {
+  const defaults = {
+    headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrf() },
+    credentials: "same-origin",
+  };
+  const resp = await fetch(url, { ...defaults, ...options });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.detail || JSON.stringify(err) || `HTTP ${resp.status}`);
+  }
+  if (resp.status === 204) return null;
+  return resp.json();
+}
+
+function getCsrf() {
+  return document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? "";
+}
+
+function flash(msg, ok = true) {
+  const el = document.getElementById("dash-status");
+  if (!el) return;
+  el.textContent = msg;
+  el.style.background = ok ? "" : "#b4321e";
+  el.classList.add("is-visible");
+  setTimeout(() => el.classList.remove("is-visible"), 3200);
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+function fmtShiftStart(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+    + " · " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function fmtRelative(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const diff = Math.floor((Date.now() - d) / 1000);
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  const days = Math.floor(diff / 86400);
+  return days === 1 ? "yesterday" : `${days}d ago`;
+}
+
+// ─── RENDER HELPERS ───────────────────────────────────────────────────────────
+
+function renderShiftCard(shift, opts = {}) {
+  const parts = shift.date_label?.split(",") ?? ["", ""];
+  const dayPart = parts[0]?.trim() ?? "";
+  const numPart = parts[1]?.trim().split(" ")[1] ?? "";
+  const isOpen = opts.isOpen;
+  const isMine = opts.isMine;
+
+  return `
+    <div class="shift-card${isOpen ? " shift-card--open" : ""}${isMine ? " shift-card--mine" : ""}"
+         ${isMine ? `data-shift-id="${shift.shift_id}" data-assignment-id="${shift.assignment_id ?? ""}" role="button" tabindex="0"` : ""}>
+      <div class="shift-card__date">
+        <span class="shift-card__date-day">${dayPart}</span>
+        <span class="shift-card__date-num">${numPart}</span>
+      </div>
+      <div class="shift-card__title">${shift.title ?? "Shift"}</div>
+      <div class="shift-card__meta">
+        <span class="shift-card__role">${shift.role ?? ""}</span>
+      </div>
+      <div class="shift-card__time">${shift.start_time ?? ""} – ${shift.end_time ?? ""}</div>
+      ${isOpen && opts.onPickup ? `
+        <div class="shift-card__action">
+          <button class="btn-pickup" data-id="${shift.shift_id}">Volunteer</button>
+        </div>` : ""}
+    </div>`;
+}
+
+const DEPT_LABELS = { all: "All", foh: "Front of House", boh: "Back of House", management: "Management" };
+
+function renderAnnouncementCard(ann) {
+  const isRead = ann.is_read;
+  const deptLabel = ann.department && ann.department !== "all" ? DEPT_LABELS[ann.department] ?? ann.department : null;
+  const actionBtn = isRead
+    ? `<button class="ann-mark-unread" data-id="${ann.id}" type="button">Mark as unread</button>`
+    : `<button class="ann-mark-read" data-id="${ann.id}" type="button">Mark as read</button>`;
+  return `
+    <div class="announcement-card${isRead ? " announcement-card--read" : ""}" data-ann-id="${ann.id}">
+      <div class="announcement-card__header">
+        <span class="announcement-card__title">${ann.title}</span>
+        <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
+          ${deptLabel ? `<span class="ann-dept-badge ann-dept-badge--${ann.department}">${deptLabel}</span>` : ""}
+          <span class="announcement-card__date">${fmtRelative(ann.created_at)}</span>
+        </div>
+      </div>
+      <p class="announcement-card__body">${ann.body}</p>
+      <div class="announcement-card__footer">
+        <p class="announcement-card__author">— ${ann.posted_by_name ?? "Manager"}</p>
+        ${actionBtn}
+      </div>
+    </div>`;
+}
+
+function renderAnnouncementsSection(announcements, containerEl) {
+  const unread = announcements.filter(a => !a.is_read);
+
+  if (!unread.length) {
+    containerEl.innerHTML = '<div class="empty-state">No new announcements.</div>';
+    return;
+  }
+
+  containerEl.innerHTML = unread.map(a => renderAnnouncementCard(a)).join("");
+
+  containerEl.querySelectorAll(".ann-mark-read").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      try {
+        await api(`/api/v1/announcements/${btn.dataset.id}/mark-read/`, { method: "POST" });
+        loadDashboard();
+      } catch (err) { flash(err.message, false); }
+    });
+  });
+}
+
+function typeLabel(type) {
+  if (type === "timeoff") return ["Time Off", "request-summary-card__type--timeoff"];
+  if (type === "availability") return ["Availability", "request-summary-card__type--availability"];
+  return ["Swap", "request-summary-card__type--swap"];
+}
+
+async function cancelRequest(kind, id) {
+  try {
+    await api(`/api/v1/${kind}/${id}/cancel/`, { method: "POST" });
+    flash("Request cancelled.");
+    loadDashboard();
+  } catch (err) {
+    flash(err.message, false);
+  }
+}
+
+function renderMyRequestCard(r, kind) {
+  const [label, cls] = typeLabel(kind);
+  let text = "";
+  if (kind === "timeoff") text = `${r.start_date} → ${r.end_date}${r.reason ? ": " + r.reason : ""}`;
+  else if (kind === "availability") text = `${r.day_name} → ${r.requested_status}`;
+  else text = `${r.request_type === "swap" ? "Trade" : r.request_type === "giveaway" ? "Giveaway" : "Pickup"}: ${r.shift_title ?? ""}`;
+  const endpoint = kind === "timeoff" ? "time-off-requests" : kind === "availability" ? "availability-change-requests" : "shift-swap-requests";
+  return `
+    <div class="request-summary-card">
+      <span class="request-summary-card__type ${cls}">${label}</span>
+      <span class="request-summary-card__text">${text}</span>
+      <div style="display:flex;gap:.4rem;align-items:center">
+        <span class="request-summary-card__status">Pending</span>
+        <button class="btn-cancel-req" data-kind="${endpoint}" data-id="${r.id}">Cancel</button>
+      </div>
+    </div>`;
+}
+
+// ─── EMPLOYEE VIEW ────────────────────────────────────────────────────────────
+
+function renderEmployeeDashboard(data) {
+  document.getElementById("dash-role-label").textContent = "My Schedule";
+  document.getElementById("dash-greeting").textContent = "Here's your week";
+  document.getElementById("employee-view").hidden = false;
+
+  // Upcoming shifts
+  const upcomingEl = document.getElementById("upcoming-shifts-list");
+  if (data.upcoming_shifts?.length) {
+    upcomingEl.innerHTML = data.upcoming_shifts.map(s => renderShiftCard(s, { isMine: true })).join("");
+    upcomingEl.querySelectorAll(".shift-card--mine").forEach(card => {
+      const shiftId = card.dataset.shiftId;
+      const shift = data.upcoming_shifts.find(s => String(s.shift_id) === String(shiftId));
+      if (!shift) return;
+      card.addEventListener("click", () => openShiftSheet(shift));
+      card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") openShiftSheet(shift); });
+    });
+  } else {
+    upcomingEl.innerHTML = '<div class="empty-state">No shifts scheduled in the next 7 days.</div>';
+  }
+
+  // Incoming swap requests (this user is the requested party)
+  const incomingSection = document.getElementById("incoming-swaps-section");
+  const incomingList = document.getElementById("incoming-swaps-dash-list");
+  if (incomingSection && incomingList) {
+    const incoming = data.incoming_swaps ?? [];
+    if (incoming.length) {
+      incomingSection.hidden = false;
+      incomingList.innerHTML = incoming.map(r => {
+        const roleTag = r.shift_role_name ? `<span class="role-tag">${r.shift_role_name}</span>` : "";
+        const isGiveaway = r.request_type === "giveaway";
+        const body = isGiveaway
+          ? `<span class="approval-card__title">${r.requester_name} wants to give you a shift</span>
+             <span class="approval-card__sub">${roleTag} ${r.shift_title ?? ""} · ${fmtShiftStart(r.shift_start)}</span>`
+          : `<span class="approval-card__title">${r.requester_name} wants to trade with you</span>
+             <span class="approval-card__sub"><span style="opacity:.7">Their shift:</span> ${roleTag} ${r.shift_title ?? ""} · ${fmtShiftStart(r.shift_start)}</span>
+             <span class="approval-card__sub"><span style="opacity:.7">Your shift:</span> ${r.target_shift_role_name ? `<span class="role-tag">${r.target_shift_role_name}</span>` : ""} ${r.target_shift_title ?? ""} · ${fmtShiftStart(r.target_shift_start)}</span>`;
+        return `
+          <div class="approval-card">
+            <span class="approval-card__type">${isGiveaway ? "Shift Giveaway" : "Shift Trade Request"}</span>
+            ${body}
+            ${r.reason ? `<span class="approval-card__date">${r.reason}</span>` : ""}
+            <div class="approval-card__actions">
+              <button class="btn-approve" data-id="${r.id}">Accept</button>
+              <button class="btn-deny" data-id="${r.id}">Decline</button>
+            </div>
+          </div>`;
+      }).join("");
+
+      incomingList.querySelectorAll(".btn-approve").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          try {
+            await api(`/api/v1/shift-swap-requests/${btn.dataset.id}/accept/`, { method: "POST" });
+            flash("Accepted — waiting for manager approval.");
+            loadDashboard();
+          } catch (err) { flash(err.message, false); }
+        });
+      });
+      incomingList.querySelectorAll(".btn-deny").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          try {
+            await api(`/api/v1/shift-swap-requests/${btn.dataset.id}/decline/`, { method: "POST" });
+            flash("Declined.");
+            loadDashboard();
+          } catch (err) { flash(err.message, false); }
+        });
+      });
+    } else {
+      incomingSection.hidden = true;
+    }
+  }
+
+  // Claimable giveaways
+  const giveawaySection = document.getElementById("claimable-giveaways-section");
+  const giveawayList = document.getElementById("claimable-giveaways-list");
+  if (data.claimable_giveaways?.length && giveawaySection && giveawayList) {
+    giveawaySection.hidden = false;
+    giveawayList.innerHTML = data.claimable_giveaways.map(g => {
+      const parts = (g.shift_start ? fmtShiftStart(g.shift_start) : "").split(" · ");
+      const dayPart = parts[0]?.split(",")[0]?.trim() ?? "";
+      const numPart = parts[0]?.split(" ")[2]?.trim() ?? "";
+      return `
+        <div class="shift-card shift-card--open">
+          <div class="shift-card__date">
+            <span class="shift-card__date-day">${dayPart}</span>
+            <span class="shift-card__date-num">${numPart}</span>
+          </div>
+          <div class="shift-card__title">${g.shift_title ?? "Shift"}</div>
+          <div class="shift-card__meta">
+            ${g.shift_role_name ? `<span class="shift-card__role">${g.shift_role_name}</span>` : ""}
+            <span style="margin-left:.4rem;color:var(--muted);font-size:.75rem">${g.requester_name ?? ""}</span>
+          </div>
+          <div class="shift-card__time">${parts[1] ?? ""}</div>
+          <div class="shift-card__action">
+            <button class="btn-pickup" data-id="${g.id}">Claim</button>
+          </div>
+        </div>`;
+    }).join("");
+    giveawayList.querySelectorAll(".btn-pickup").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        try {
+          await api(`/api/v1/shift-swap-requests/${btn.dataset.id}/accept/`, { method: "POST" });
+          flash("Claimed — awaiting manager approval.");
+          loadDashboard();
+        } catch (err) {
+          flash(err.message, false);
+        }
+      });
+    });
+  } else if (giveawaySection) {
+    giveawaySection.hidden = true;
+  }
+
+  // Open shifts (pickup)
+  const openEl = document.getElementById("open-shifts-employee-list");
+  if (data.open_shifts?.length) {
+    openEl.innerHTML = data.open_shifts.map(s => renderShiftCard(s, { isOpen: true, onPickup: true })).join("");
+    openEl.querySelectorAll(".btn-pickup").forEach(btn => {
+      btn.addEventListener("click", () => volunteerForShift(btn.dataset.id));
+    });
+  } else {
+    openEl.innerHTML = '<div class="empty-state">No open shifts right now.</div>';
+  }
+
+  // Pending requests with cancel
+  const pendingEl = document.getElementById("pending-requests-list");
+  const allPending = [
+    ...(data.pending_time_off ?? []).map(r => ({ kind: "timeoff", r })),
+    ...(data.pending_availability ?? []).map(r => ({ kind: "availability", r })),
+    ...(data.pending_swaps ?? []).map(r => ({ kind: "swap", r })),
+  ];
+
+  if (allPending.length) {
+    pendingEl.innerHTML = allPending.map(({ kind, r }) => renderMyRequestCard(r, kind)).join("");
+    pendingEl.querySelectorAll(".btn-cancel-req").forEach(btn => {
+      btn.addEventListener("click", () => cancelRequest(btn.dataset.kind, btn.dataset.id));
+    });
+  } else {
+    pendingEl.innerHTML = '<div class="empty-state">No pending requests.</div>';
+  }
+
+  // Announcements
+  renderAnnouncementsSection(data.announcements ?? [], document.getElementById("announcements-employee-list"));
+}
+
+async function volunteerForShift(shiftId) {
+  try {
+    await api("/api/v1/shift-swap-requests/", {
+      method: "POST",
+      body: JSON.stringify({ shift: shiftId, request_type: "pickup", reason: "" }),
+    });
+    flash("Pickup request submitted — awaiting manager approval.");
+    loadDashboard();
+  } catch (err) {
+    flash(err.message, false);
+  }
+}
+
+// ─── MANAGER VIEW ─────────────────────────────────────────────────────────────
+
+function renderManagerDashboard(data) {
+  document.getElementById("dash-role-label").textContent = "Manager View";
+  document.getElementById("dash-greeting").textContent = "Approvals & Team Overview";
+  document.getElementById("manager-view").hidden = false;
+
+  // Manager's own upcoming shifts
+  const upcomingSection = document.getElementById("manager-upcoming-section");
+  const upcomingList = document.getElementById("manager-upcoming-list");
+  if (upcomingSection && upcomingList) {
+    if (data.upcoming_shifts?.length) {
+      upcomingSection.hidden = false;
+      upcomingList.innerHTML = data.upcoming_shifts.map(s => renderShiftCard(s, { isMine: true })).join("");
+    } else {
+      upcomingSection.hidden = true;
+    }
+  }
+
+  // Pending queue
+  const allPending = [
+    ...(data.pending_time_off ?? []).map(r => ({
+      kind: "time_off",
+      id: r.id,
+      typeLine: "Time Off Request",
+      title: r.employee_name,
+      sub: `${r.start_date} → ${r.end_date}${r.reason ? " · " + r.reason : ""}`,
+    })),
+    ...(data.pending_availability ?? []).map(r => ({
+      kind: "availability",
+      id: r.id,
+      typeLine: "Availability Change",
+      title: r.employee_name,
+      sub: `${r.day_name} → ${r.requested_status}${r.reason ? " · " + r.reason : ""}`,
+    })),
+    ...(data.pending_swaps ?? []).map(r => ({
+      kind: "swap",
+      id: r.id,
+      typeLine: r.request_type === "swap" ? "Shift Swap" : r.request_type === "giveaway" ? "Shift Giveaway" : "Shift Pickup",
+      title: r.requester_name,
+      role: r.shift_role_name ?? null,
+      date: r.shift_start ? fmtShiftStart(r.shift_start) : null,
+      sub: `${r.shift_title ?? ""}${r.coverer_name ? " · covered by " + r.coverer_name : !r.coverer_approved && r.request_type === "giveaway" ? " · awaiting coverer" : ""}${r.reason ? " · " + r.reason : ""}`,
+    })),
+  ];
+
+  const queueEl = document.getElementById("manager-queue-list");
+  const pillEl = document.getElementById("pending-count-pill");
+  pillEl.textContent = `${allPending.length} pending`;
+
+  if (allPending.length) {
+    queueEl.innerHTML = allPending.map(item => `
+      <div class="approval-card" data-kind="${item.kind}" data-id="${item.id}">
+        <span class="approval-card__type">${item.typeLine}</span>
+        <span class="approval-card__title">${item.title}</span>
+        <span class="approval-card__sub">
+          ${item.role ? `<span class="role-tag">${item.role}</span> ` : ""}${item.sub}
+        </span>
+        ${item.date ? `<span class="approval-card__date">${item.date}</span>` : ""}
+        <div class="approval-card__actions">
+          <button class="btn-approve" data-kind="${item.kind}" data-id="${item.id}">Approve</button>
+          <button class="btn-deny" data-kind="${item.kind}" data-id="${item.id}">Deny</button>
+        </div>
+      </div>`).join("");
+
+    queueEl.querySelectorAll(".btn-approve").forEach(btn => {
+      btn.addEventListener("click", () => handleApproval(btn.dataset.kind, btn.dataset.id, "approve"));
+    });
+    queueEl.querySelectorAll(".btn-deny").forEach(btn => {
+      btn.addEventListener("click", () => handleApproval(btn.dataset.kind, btn.dataset.id, "deny"));
+    });
+  } else {
+    queueEl.innerHTML = '<div class="empty-state">No pending requests — all clear.</div>';
+  }
+
+  // Open shifts
+  const openEl = document.getElementById("open-shifts-manager-list");
+  if (data.open_shifts?.length) {
+    openEl.innerHTML = data.open_shifts.map(s => renderShiftCard(s, { isOpen: true })).join("");
+  } else {
+    openEl.innerHTML = '<div class="empty-state">No open shifts posted.</div>';
+  }
+
+  // Manager's own pending requests
+  const myReqSection = document.getElementById("manager-my-requests-section");
+  const myReqList = document.getElementById("manager-my-requests-list");
+  if (myReqSection && myReqList) {
+    const myPending = [
+      ...(data.my_time_off ?? []).map(r => ({ kind: "timeoff", r })),
+      ...(data.my_availability ?? []).map(r => ({ kind: "availability", r })),
+      ...(data.my_swaps ?? []).map(r => ({ kind: "swap", r })),
+    ];
+    if (myPending.length) {
+      myReqSection.hidden = false;
+      myReqList.innerHTML = myPending.map(({ kind, r }) => renderMyRequestCard(r, kind)).join("");
+      myReqList.querySelectorAll(".btn-cancel-req").forEach(btn => {
+        btn.addEventListener("click", () => cancelRequest(btn.dataset.kind, btn.dataset.id));
+      });
+    } else {
+      myReqSection.hidden = true;
+    }
+  }
+
+  // Announcements
+  renderAnnouncementsSection(data.announcements ?? [], document.getElementById("announcements-manager-list"));
+}
+
+const kindToEndpoint = {
+  time_off: "time-off-requests",
+  availability: "availability-change-requests",
+  swap: "shift-swap-requests",
 };
 
-const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const monthLabels = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-];
-
-bootstrap();
-
-function bootstrap() {
-    mountToolbar();
-    mountModal();
-    mountEmployeeModal();
-    mountAssignmentForm();
-    populateStaticSelects();
-    renderCalendar();
-    updateMetrics();
-    updateSummary();
-    hydrateData();
+async function handleApproval(kind, id, action) {
+  const endpoint = kindToEndpoint[kind];
+  if (!endpoint) return;
+  try {
+    await api(`/api/v1/${endpoint}/${id}/${action}/`, { method: "POST" });
+    flash(action === "approve" ? "Approved." : "Denied.");
+    loadDashboard();
+  } catch (err) {
+    flash(err.message, false);
+  }
 }
 
-async function hydrateData() {
-    setStatus("Loading schedule data...");
+// ─── SHIFT ACTION SHEET ───────────────────────────────────────────────────────
 
-    const endpoints = [
-        { key: "shifts", url: "/api/v1/shifts/" },
-        { key: "employees", url: "/api/v1/employees/" },
-        { key: "roles", url: "/api/v1/roles/" },
-        { key: "assignments", url: "/api/v1/assignments/" },
-    ];
+function openShiftSheet(shift) {
+  activeShift = shift;
+  document.getElementById("sheet-shift-title").textContent = shift.title ?? "Shift";
+  document.getElementById("sheet-shift-meta").textContent =
+    `${shift.date_label ?? shift.date ?? ""} · ${shift.start_time ?? ""} – ${shift.end_time ?? ""}`;
+  document.getElementById("sheet-giveaway-reason").value = "";
+  document.getElementById("sheet-trade-reason").value = "";
 
-    const results = await Promise.allSettled(
-        endpoints.map((endpoint) => fetchJson(endpoint.url))
-    );
-
-    const failures = [];
-
-    results.forEach((result, index) => {
-        const { key } = endpoints[index];
-        if (result.status === "fulfilled") {
-            state[key] = result.value;
-            return;
-        }
-
-        failures.push(`${key}: ${result.reason.message}`);
+  const giveawayTarget = document.getElementById("sheet-giveaway-target");
+  giveawayTarget.innerHTML = '<option value="">Anyone (open giveaway)</option>';
+  api(`/api/v1/employees/eligible_for_giveaway/?shift=${shift.shift_id}`).then(resp => {
+    const emps = resp.results ?? resp;
+    emps.forEach(emp => {
+      const o = document.createElement("option");
+      o.value = emp.id;
+      o.textContent = emp.name;
+      giveawayTarget.appendChild(o);
     });
+  }).catch(() => {});
 
-    populateDynamicSelects();
-    renderCalendar();
-    updateMetrics();
-
-    if (failures.length) {
-        setStatus(
-            `Loaded partial schedule data. ${failures.join(" | ")}`,
-            "error"
-        );
-    } else {
-        setStatus("Schedule loaded.", "success");
-    }
-}
-
-function mountToolbar() {
-    monthSelect.innerHTML = monthLabels
-        .map((label, index) => `<option value="${index}">${label}</option>`)
-        .join("");
-
-    const startYear = state.currentYear - 3;
-    const endYear = state.currentYear + 5;
-    const years = [];
-    for (let year = startYear; year <= endYear; year += 1) {
-        years.push(`<option value="${year}">${year}</option>`);
-    }
-    yearSelect.innerHTML = years.join("");
-
-    document.getElementById("previous").addEventListener("click", () => {
-        if (state.currentMonth === 0) {
-            state.currentMonth = 11;
-            state.currentYear -= 1;
-        } else {
-            state.currentMonth -= 1;
-        }
-        renderCalendar();
+  const select = document.getElementById("sheet-trade-target");
+  select.innerHTML = '<option value="">Loading teammates\' shifts…</option>';
+  api(`/api/v1/shifts/?for_trade=true&my_shift=${shift.shift_id}&limit=100`).then(resp => {
+    const shifts = resp.results ?? resp;
+    select.innerHTML = '<option value="">Select a shift to trade for</option>';
+    shifts.forEach(s => {
+      const emp = s.assignments?.[0]?.employee_name ?? "Teammate";
+      const start = new Date(s.start_time);
+      const label = `${s.title} · ${emp} · ${start.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} ${start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+      const o = document.createElement("option");
+      o.value = s.id;
+      o.dataset.employeeId = s.assignments?.[0]?.employee ?? "";
+      o.textContent = label;
+      select.appendChild(o);
     });
+    if (!shifts.length) select.innerHTML = '<option value="">No tradeable shifts available</option>';
+  }).catch(() => {
+    select.innerHTML = '<option value="">Could not load shifts</option>';
+  });
 
-    document.getElementById("next").addEventListener("click", () => {
-        if (state.currentMonth === 11) {
-            state.currentMonth = 0;
-            state.currentYear += 1;
-        } else {
-            state.currentMonth += 1;
-        }
-        renderCalendar();
+  document.getElementById("shift-sheet-overlay").hidden = false;
+}
+
+function closeShiftSheet() {
+  document.getElementById("shift-sheet-overlay").hidden = true;
+  activeShift = null;
+}
+
+document.getElementById("shift-sheet-close")?.addEventListener("click", closeShiftSheet);
+document.getElementById("shift-sheet-overlay")?.addEventListener("click", e => {
+  if (e.target === e.currentTarget) closeShiftSheet();
+});
+
+document.getElementById("sheet-giveaway-btn")?.addEventListener("click", async () => {
+  if (!activeShift) return;
+  const reason = document.getElementById("sheet-giveaway-reason").value.trim();
+  const targetVal = document.getElementById("sheet-giveaway-target")?.value;
+  const requested_employee = targetVal ? Number(targetVal) : null;
+  try {
+    await api("/api/v1/shift-swap-requests/", {
+      method: "POST",
+      body: JSON.stringify({
+        request_type: "giveaway",
+        shift: activeShift.shift_id,
+        reason,
+        ...(requested_employee ? { requested_employee } : {}),
+      }),
     });
+    flash(requested_employee
+      ? "Giveaway sent — they'll need to accept before manager review."
+      : "Giveaway posted — teammates can now claim it.");
+    closeShiftSheet();
+    loadDashboard();
+  } catch (err) {
+    flash(err.message, false);
+  }
+});
 
-    document.getElementById("today-button").addEventListener("click", () => {
-        state.currentMonth = state.today.getMonth();
-        state.currentYear = state.today.getFullYear();
-        state.selectedDateKey = dateKeyFromDate(state.today);
-        renderCalendar();
+document.getElementById("sheet-trade-btn")?.addEventListener("click", async () => {
+  if (!activeShift) return;
+  const select = document.getElementById("sheet-trade-target");
+  const targetShiftId = select.value;
+  if (!targetShiftId) { flash("Pick a shift to trade for.", false); return; }
+  const selectedOption = select.options[select.selectedIndex];
+  const requestedEmployeeId = selectedOption?.dataset?.employeeId || null;
+  const reason = document.getElementById("sheet-trade-reason").value.trim();
+  try {
+    await api("/api/v1/shift-swap-requests/", {
+      method: "POST",
+      body: JSON.stringify({
+        request_type: "swap",
+        shift: activeShift.shift_id,
+        target_shift: Number(targetShiftId),
+        requested_employee: requestedEmployeeId ? Number(requestedEmployeeId) : null,
+        reason,
+      }),
     });
+    flash("Trade request sent — waiting for your teammate to accept.");
+    closeShiftSheet();
+    loadDashboard();
+  } catch (err) {
+    flash(err.message, false);
+  }
+});
 
-    monthSelect.addEventListener("change", () => {
-        state.currentMonth = Number(monthSelect.value);
-        renderCalendar();
-    });
+// ─── ANNOUNCEMENTS FORM ────────────────────────────────────────────────────────
 
-    yearSelect.addEventListener("change", () => {
-        state.currentYear = Number(yearSelect.value);
-        renderCalendar();
-    });
-}
+function initAnnouncementForm() {
+  const openBtn = document.getElementById("open-announcement-form");
+  const cancelBtn = document.getElementById("cancel-announcement");
+  const wrap = document.getElementById("announcement-form-wrap");
+  const form = document.getElementById("announcement-form");
+  if (!form) return;
 
-function mountModal() {
-    document.getElementById("open-shift-modal").addEventListener("click", () => {
-        shiftModal.classList.add("is-open");
-        shiftModal.setAttribute("aria-hidden", "false");
-    });
+  openBtn?.addEventListener("click", () => {
+    wrap.hidden = false;
+    openBtn.hidden = true;
+  });
 
-    document.getElementById("close-shift-modal").addEventListener("click", closeShiftModal);
+  cancelBtn?.addEventListener("click", () => {
+    wrap.hidden = true;
+    openBtn.hidden = false;
+    form.reset();
+  });
 
-    shiftModal.addEventListener("click", (event) => {
-        if (event.target === shiftModal) {
-            closeShiftModal();
-        }
-    });
-
-    shiftForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        const payload = {
-            title: document.getElementById("shift-title").value.trim(),
-            role: document.getElementById("shift-role").value || null,
-            start_time: toIsoString(document.getElementById("shift-start").value),
-            end_time: toIsoString(document.getElementById("shift-end").value),
-            notes: document.getElementById("shift-notes").value.trim(),
-        };
-
-        try {
-            const createdShift = await fetchJson("/api/v1/shifts/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            state.shifts.push(createdShift);
-            populateDynamicSelects();
-            renderCalendar();
-            updateMetrics();
-            shiftForm.reset();
-            closeShiftModal();
-            setStatus("Shift created successfully.", "success");
-        } catch (error) {
-            setStatus(error.message || "Unable to create the shift.", "error");
-        }
-    });
-}
-
-function mountEmployeeModal() {
-    const openButtons = [
-        document.getElementById("open-employee-modal"),
-        document.getElementById("open-employee-modal-inline"),
-    ].filter(Boolean);
-
-    openButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            employeeModal.classList.add("is-open");
-            employeeModal.setAttribute("aria-hidden", "false");
-        });
-    });
-
-    document.getElementById("close-employee-modal").addEventListener("click", closeEmployeeModal);
-
-    employeeModal.addEventListener("click", (event) => {
-        if (event.target === employeeModal) {
-            closeEmployeeModal();
-        }
-    });
-
-    employeeForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        const payload = {
-            name: document.getElementById("employee-name").value.trim(),
-            email: document.getElementById("employee-email").value.trim(),
-        };
-
-        try {
-            const createdEmployee = await fetchJson("/api/v1/employees/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            state.employees.push(createdEmployee);
-            state.employees.sort((left, right) => left.name.localeCompare(right.name));
-            populateDynamicSelects();
-            renderEmployeeRoster();
-            updateMetrics();
-            employeeForm.reset();
-            closeEmployeeModal();
-            setStatus("Employee created successfully.", "success");
-        } catch (error) {
-            setStatus(error.message || "Unable to create employee.", "error");
-        }
-    });
-}
-
-function mountAssignmentForm() {
-    assignmentForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        const payload = {
-            shift: assignmentShift.value,
-            employee: assignmentEmployee.value,
-        };
-
-        try {
-            const createdAssignment = await fetchJson("/api/v1/assignments/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            state.assignments.push(createdAssignment);
-            await hydrateShiftsOnly();
-            setStatus("Employee assigned to shift.", "success");
-        } catch (error) {
-            setStatus(error.message || "Unable to assign employee to shift.", "error");
-        }
-    });
-}
-
-function populateStaticSelects() {
-    state.selectedDateKey = dateKeyFromDate(state.today);
-    monthSelect.value = String(state.currentMonth);
-    yearSelect.value = String(state.currentYear);
-}
-
-function populateDynamicSelects() {
-    state.employees.sort((left, right) => left.name.localeCompare(right.name));
-
-    assignmentEmployee.innerHTML = `
-        <option value="">Select an employee</option>
-        ${state.employees.map((employee) => `<option value="${employee.id}">${employee.name}</option>`).join("")}
-    `;
-
-    document.getElementById("shift-role").innerHTML = `
-        <option value="">Select a role</option>
-        ${state.roles.map((role) => `<option value="${role.id}">${role.name}</option>`).join("")}
-    `;
-
-    assignmentShift.innerHTML = `
-        <option value="">Select a shift</option>
-        ${state.shifts
-            .map(
-                (shift) => `<option value="${shift.id}">${shift.title} · ${formatDateTimeRange(
-                    shift.start_time,
-                    shift.end_time
-                )}</option>`
-            )
-            .join("")}
-    `;
-
-    renderEmployeeRoster();
-}
-
-function renderCalendar() {
-    monthLabel.textContent = `${monthLabels[state.currentMonth]} ${state.currentYear}`;
-    monthSelect.value = String(state.currentMonth);
-    yearSelect.value = String(state.currentYear);
-
-    calendarGrid.innerHTML = "";
-    dayLabels.forEach((label) => {
-        const cell = document.createElement("div");
-        cell.className = "calendar-day--label";
-        cell.textContent = label;
-        calendarGrid.appendChild(cell);
-    });
-
-    const firstOfMonth = new Date(state.currentYear, state.currentMonth, 1);
-    const startOfGrid = new Date(firstOfMonth);
-    startOfGrid.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
-
-    for (let offset = 0; offset < 42; offset += 1) {
-        const currentDate = new Date(startOfGrid);
-        currentDate.setDate(startOfGrid.getDate() + offset);
-        const currentDateKey = dateKeyFromDate(currentDate);
-        const shifts = shiftsForDateKey(currentDateKey);
-
-        const cell = document.createElement("button");
-        cell.type = "button";
-        cell.className = "calendar-day";
-        if (currentDate.getMonth() !== state.currentMonth) {
-            cell.classList.add("is-outside-month");
-        }
-        if (currentDateKey === dateKeyFromDate(state.today)) {
-            cell.classList.add("is-today");
-        }
-        if (currentDateKey === state.selectedDateKey) {
-            cell.classList.add("is-selected");
-        }
-        cell.addEventListener("click", () => {
-            state.selectedDateKey = currentDateKey;
-            renderCalendar();
-        });
-
-        const shiftPreview = shifts
-            .slice(0, 2)
-            .map((shift) => {
-                return `
-                    <div class="calendar-day__mini-shift">
-                        <strong>${escapeHtml(shift.title)}</strong>
-                        <span>${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}</span>
-                    </div>
-                `;
-            })
-            .join("");
-
-        cell.innerHTML = `
-            <div class="calendar-day__head">
-                <span class="calendar-day__date">${currentDate.getDate()}</span>
-                <span class="calendar-day__count">${shifts.length ? `${shifts.length} shift${shifts.length > 1 ? "s" : ""}` : ""}</span>
-            </div>
-            <div class="calendar-day__shifts">
-                ${shiftPreview || '<div class="empty-state">No shifts</div>'}
-            </div>
-        `;
-
-        calendarGrid.appendChild(cell);
-    }
-
-    renderSelectedDay();
-    updateMetrics();
-    updateSummary();
-}
-
-function renderSelectedDay() {
-    if (!state.selectedDateKey) {
-        selectedDayTitle.textContent = "Choose a day";
-        selectedDayShifts.innerHTML = '<div class="empty-state">Pick a date on the calendar to review the scheduled shifts.</div>';
-        return;
-    }
-
-    const shifts = shiftsForDateKey(state.selectedDateKey);
-    const date = new Date(`${state.selectedDateKey}T00:00:00`);
-    selectedDayTitle.textContent = date.toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-    });
-
-    if (!shifts.length) {
-        selectedDayShifts.innerHTML = '<div class="empty-state">No shifts are scheduled for this day yet.</div>';
-        return;
-    }
-
-    selectedDayShifts.innerHTML = "";
-    shifts.forEach((shift) => {
-        selectedDayShifts.appendChild(renderShiftCard(shift));
-    });
-}
-
-function renderShiftCard(shift) {
-    const template = document.getElementById("shift-card-template");
-    const fragment = template.content.cloneNode(true);
-    const root = fragment.querySelector(".shift-card");
-
-    root.querySelector(".shift-card__role").textContent = shift.role_name || "General role";
-    root.querySelector(".shift-card__title").textContent = shift.title;
-    root.querySelector(".shift-card__time").textContent = formatDateTimeRange(
-        shift.start_time,
-        shift.end_time
-    );
-    root.querySelector(".shift-card__notes").textContent = shift.notes || "No notes added.";
-
-    const employeesNode = root.querySelector(".shift-card__employees");
-    const assignedEmployees = (shift.assignments || []).map((assignment) => assignment.employee_name);
-    if (assignedEmployees.length) {
-        employeesNode.innerHTML = assignedEmployees.map((employeeName) => `<span>${escapeHtml(employeeName)}</span>`).join("");
-    } else {
-        employeesNode.innerHTML = '<span>Unassigned</span>';
-    }
-
-    root.querySelector(".shift-card__assign").addEventListener("click", () => {
-        assignmentShift.value = String(shift.id);
-        assignmentEmployee.focus();
-    });
-
-    return fragment;
-}
-
-function shiftsForDateKey(dateKey) {
-    return state.shifts.filter((shift) => dateKeyFromIso(shift.start_time) === dateKey);
-}
-
-function updateMetrics() {
-    document.getElementById("employee-count").textContent = String(state.employees.length);
-    document.getElementById("role-count").textContent = String(state.roles.length);
-
-    const monthlyShiftCount = state.shifts.filter((shift) => {
-        const date = new Date(shift.start_time);
-        return date.getMonth() === state.currentMonth && date.getFullYear() === state.currentYear;
-    }).length;
-
-    document.getElementById("shift-count").textContent = String(monthlyShiftCount);
-    document.getElementById("assignment-count").textContent = String(state.assignments.length);
-}
-
-function updateSummary() {
-    const monthShiftCount = state.shifts.filter((shift) => {
-        const date = new Date(shift.start_time);
-        return date.getMonth() === state.currentMonth && date.getFullYear() === state.currentYear;
-    }).length;
-
-    summaryLabel.textContent = `${monthShiftCount} scheduled shift${monthShiftCount === 1 ? "" : "s"} in ${monthLabels[state.currentMonth]}`;
-}
-
-function renderEmployeeRoster() {
-    if (!state.employees.length) {
-        employeeRoster.innerHTML = '<div class="empty-state">No employees added yet.</div>';
-        return;
-    }
-
-    employeeRoster.innerHTML = state.employees
-        .slice(0, 8)
-        .map((employee) => {
-            const initials = employee.name
-                .split(" ")
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((part) => part[0].toUpperCase())
-                .join("");
-
-            return `
-                <div class="employee-roster__item">
-                    <div>
-                        <strong>${escapeHtml(employee.name)}</strong>
-                        <span>${escapeHtml(employee.email)}</span>
-                    </div>
-                    <span class="employee-roster__badge">${initials || "TM"}</span>
-                </div>
-            `;
-        })
-        .join("");
-}
-
-async function hydrateShiftsOnly() {
-    const [shiftResponse, assignmentResponse] = await Promise.all([
-        fetchJson("/api/v1/shifts/"),
-        fetchJson("/api/v1/assignments/"),
-    ]);
-
-    state.shifts = shiftResponse;
-    state.assignments = assignmentResponse;
-    populateDynamicSelects();
-    renderCalendar();
-    updateMetrics();
-}
-
-function closeShiftModal() {
-    shiftModal.classList.remove("is-open");
-    shiftModal.setAttribute("aria-hidden", "true");
-}
-
-function closeEmployeeModal() {
-    employeeModal.classList.remove("is-open");
-    employeeModal.setAttribute("aria-hidden", "true");
-}
-
-async function fetchJson(url, options = {}) {
-    const response = await fetch(url, options);
-    let data = null;
-
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const title = document.getElementById("ann-title").value.trim();
+    const department = document.getElementById("ann-dept")?.value ?? "all";
+    const body = document.getElementById("ann-body").value.trim();
+    if (!title || !body) return;
     try {
-        data = await response.json();
-    } catch (error) {
-        data = null;
+      await api("/api/v1/announcements/", {
+        method: "POST",
+        body: JSON.stringify({ title, body, department }),
+      });
+      flash("Announcement posted.");
+      form.reset();
+      wrap.hidden = true;
+      openBtn.hidden = false;
+      loadDashboard();
+    } catch (err) {
+      flash(err.message, false);
     }
+  });
+}
 
-    if (!response.ok) {
-        throw new Error(formatApiError(data));
+// ─── BOOT ──────────────────────────────────────────────────────────────────────
+
+async function loadDashboard() {
+  try {
+    const data = await api("/api/v1/dashboard/");
+    currentRole = data.role;
+    if (data.role === "manager") {
+      renderManagerDashboard(data);
+    } else {
+      renderEmployeeDashboard(data);
     }
-
-    return data;
+  } catch (err) {
+    flash(err.message, false);
+  }
 }
 
-function formatApiError(data) {
-    if (!data) {
-        return "Something went wrong while talking to the server.";
-    }
-
-    if (typeof data === "string") {
-        return data;
-    }
-
-    const firstField = Object.values(data)[0];
-    if (Array.isArray(firstField)) {
-        return firstField.join(" ");
-    }
-
-    return "The server rejected the request.";
-}
-
-function setStatus(message, variant = "") {
-    calendarStatus.textContent = message;
-    calendarStatus.className = "status-banner";
-    if (!message) {
-        return;
-    }
-    calendarStatus.classList.add("is-visible");
-    if (variant) {
-        calendarStatus.classList.add(`is-${variant}`);
-    }
-}
-
-function toIsoString(value) {
-    return new Date(value).toISOString();
-}
-
-function dateKeyFromDate(date) {
-    return [
-        date.getFullYear(),
-        String(date.getMonth() + 1).padStart(2, "0"),
-        String(date.getDate()).padStart(2, "0"),
-    ].join("-");
-}
-
-function dateKeyFromIso(value) {
-    return dateKeyFromDate(new Date(value));
-}
-
-function formatTime(value) {
-    return new Date(value).toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit",
-    });
-}
-
-function formatDateTimeRange(start, end) {
-    return `${new Date(start).toLocaleString([], {
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-    })} - ${new Date(end).toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit",
-    })}`;
-}
-
-function escapeHtml(value) {
-    return value
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-}
+loadDashboard();
+initAnnouncementForm();

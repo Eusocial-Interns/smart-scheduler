@@ -8,52 +8,42 @@
 {% endblock %}
 
 {% block content %}
-<section class="announcements-page">
+<section class="announcements-page"
+         data-employee-id="{{ employee_id }}"
+         data-is-manager="{{ is_manager|lower }}">
     <div class="announcements-shell page-card">
         <aside class="announcements-sidebar">
             <p class="section-eyebrow">Inbox</p>
             <div class="announcement-tabs" role="tablist" aria-label="Announcement folders">
                 <button class="announcement-tab is-active" type="button" data-tab="new">New</button>
-                <button class="announcement-tab" type="button" data-tab="archive">Archive</button>
+                <button class="announcement-tab" type="button" data-tab="archive">Read</button>
+                {% if is_manager %}
                 <button class="announcement-tab" type="button" data-tab="sent">Sent</button>
+                {% endif %}
             </div>
 
-            <div class="announcement-list" data-list="new">
-                <button class="announcement-item is-active" type="button" data-target="new">
-                    <strong>Schedule published</strong>
-                    <small>New shifts are live for next week.</small>
-                </button>
-                <button class="announcement-item" type="button" data-target="new">
-                    <strong>Training reminder</strong>
-                    <small>Kitchen training starts Thursday at 3 PM.</small>
-                </button>
+            <div class="announcement-list" data-list="new" id="list-new">
+                <p class="announcements-empty">No new announcements.</p>
             </div>
 
-            <div class="announcement-list is-hidden" data-list="archive">
-                <button class="announcement-item" type="button" data-target="archive">
-                    <strong>Archived update</strong>
-                    <small>Past communication kept for reference.</small>
-                </button>
+            <div class="announcement-list is-hidden" data-list="archive" id="list-archive">
+                <p class="announcements-empty">Nothing in your archive yet.</p>
             </div>
 
-            <div class="announcement-list is-hidden" data-list="sent">
-                <button class="announcement-item" type="button" data-target="sent">
-                    <strong>Team reminder</strong>
-                    <small>Sent to all staff this morning.</small>
-                </button>
+            {% if is_manager %}
+            <div class="announcement-list is-hidden" data-list="sent" id="list-sent">
+                <p class="announcements-empty">No sent announcements.</p>
             </div>
+            {% endif %}
         </aside>
 
         <section class="announcement-detail">
-            <div class="announcement-detail__viewer">
-                <span class="pill">New</span>
-                <h1>Schedule published for next week</h1>
-                <p class="section-copy">
-                    Everyone can now review their shifts for the upcoming week. Please confirm availability changes before Friday at 5 PM so the final assignment pass can happen on time.
-                </p>
+            <div class="announcement-detail__viewer" id="detail-viewer">
+                <p class="announcements-placeholder">Select an announcement to read it.</p>
             </div>
 
-            <form class="announcement-compose page-card">
+            {% if is_manager %}
+            <form class="announcement-compose page-card" id="compose-form" onsubmit="return false">
                 <p class="section-eyebrow">Create Announcement</p>
                 <div class="form-grid">
                     <div class="field">
@@ -63,9 +53,10 @@
                     <div class="field">
                         <label for="announcement-audience">Audience</label>
                         <select id="announcement-audience">
-                            <option>All Staff</option>
-                            <option>Front of House</option>
-                            <option>Back of House</option>
+                            <option value="all">All Staff</option>
+                            <option value="foh">Front of House</option>
+                            <option value="boh">Back of House</option>
+                            <option value="management">Management</option>
                         </select>
                     </div>
                     <div class="field field--full">
@@ -74,10 +65,10 @@
                     </div>
                 </div>
                 <div class="announcement-compose__actions">
-                    <button class="button-ghost" type="button">Save Draft</button>
-                    <button class="button-primary" type="button">Post Announcement</button>
+                    <button class="button-primary" type="button" id="btn-post">Post Announcement</button>
                 </div>
             </form>
+            {% endif %}
         </section>
     </div>
 </section>
@@ -85,17 +76,168 @@
 
 {% block page_js %}
 <script>
-    const announcementTabs = document.querySelectorAll(".announcement-tab");
-    const announcementLists = document.querySelectorAll(".announcement-list");
+const PAGE        = document.querySelector(".announcements-page");
+const EMPLOYEE_ID = parseInt(PAGE.dataset.employeeId, 10);
+const IS_MANAGER  = PAGE.dataset.isManager === "true";
 
-    announcementTabs.forEach((tab) => {
-        tab.addEventListener("click", () => {
-            announcementTabs.forEach((node) => node.classList.remove("is-active"));
-            announcementLists.forEach((list) => list.classList.add("is-hidden"));
+let announcements = [];
+let activeId      = null;
 
-            tab.classList.add("is-active");
-            document.querySelector(`[data-list="${tab.dataset.tab}"]`).classList.remove("is-hidden");
-        });
+function getCsrf() {
+    return document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? "";
+}
+
+async function api(url, options = {}) {
+    const resp = await fetch(url, {
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrf() },
+        credentials: "same-origin",
+        ...options,
     });
+    if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${resp.status}`);
+    }
+    return resp.status === 204 ? null : resp.json();
+}
+
+function esc(str) {
+    return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function renderList(listEl, items, emptyMsg) {
+    listEl.innerHTML = "";
+    if (!items.length) {
+        listEl.innerHTML = `<p class="announcements-empty">${emptyMsg}</p>`;
+        return;
+    }
+    items.forEach(ann => {
+        const btn = document.createElement("button");
+        btn.className = "announcement-item" + (ann.id === activeId ? " is-active" : "");
+        btn.type = "button";
+        btn.dataset.id = ann.id;
+        btn.innerHTML = `<strong>${esc(ann.title)}</strong><small>${esc(ann.posted_by_name)} · ${fmtDate(ann.created_at)}</small>`;
+        btn.addEventListener("click", () => selectAnnouncement(ann.id));
+        listEl.appendChild(btn);
+    });
+}
+
+function renderAllLists() {
+    renderList(
+        document.getElementById("list-new"),
+        announcements.filter(a => !a.is_read),
+        "No new announcements."
+    );
+    renderList(
+        document.getElementById("list-archive"),
+        announcements.filter(a => a.is_read),
+        "Nothing in your archive yet."
+    );
+    if (IS_MANAGER) {
+        renderList(
+            document.getElementById("list-sent"),
+            announcements.filter(a => a.posted_by === EMPLOYEE_ID),
+            "No sent announcements."
+        );
+    }
+}
+
+function selectAnnouncement(id) {
+    activeId = id;
+    renderAllLists();
+
+    const ann = announcements.find(a => a.id === id);
+    if (!ann) return;
+
+    const actionBtn = ann.is_read
+        ? `<button class="button-ghost" type="button" id="btn-toggle-read">Mark as Unread</button>`
+        : `<button class="button-primary" type="button" id="btn-toggle-read">Mark as Read</button>`;
+
+    document.getElementById("detail-viewer").innerHTML = `
+        <span class="pill">${ann.is_read ? "Read" : "New"}</span>
+        <h1>${esc(ann.title)}</h1>
+        <p style="color:var(--muted);font-size:0.82rem;margin-bottom:0.75rem">
+            ${esc(ann.posted_by_name)} &mdash; ${esc(ann.department_display)} &mdash; ${fmtDate(ann.created_at)}
+        </p>
+        <p class="section-copy">${esc(ann.body)}</p>
+        <div style="margin-top:1.25rem">${actionBtn}</div>
+    `;
+
+    document.getElementById("btn-toggle-read").addEventListener("click", () => toggleRead(ann));
+}
+
+async function toggleRead(ann) {
+    const endpoint = ann.is_read ? "mark-unread" : "mark-read";
+    try {
+        const updated = await api(`/api/v1/announcements/${ann.id}/${endpoint}/`, { method: "POST" });
+        const idx = announcements.findIndex(a => a.id === ann.id);
+        if (idx !== -1) announcements[idx] = updated;
+        renderAllLists();
+        selectAnnouncement(ann.id);
+        if (!ann.is_read) switchTab("archive");
+    } catch (e) {
+        console.error("Failed to update read status:", e);
+    }
+}
+
+function switchTab(name) {
+    document.querySelectorAll(".announcement-tab").forEach(t =>
+        t.classList.toggle("is-active", t.dataset.tab === name)
+    );
+    document.querySelectorAll(".announcement-list").forEach(l =>
+        l.classList.toggle("is-hidden", l.dataset.list !== name)
+    );
+}
+
+async function postAnnouncement() {
+    const title      = document.getElementById("announcement-title").value.trim();
+    const body       = document.getElementById("announcement-body").value.trim();
+    const department = document.getElementById("announcement-audience").value;
+    if (!title || !body) return;
+
+    const btn = document.getElementById("btn-post");
+    btn.disabled = true;
+    try {
+        const created = await api("/api/v1/announcements/", {
+            method: "POST",
+            body: JSON.stringify({ title, body, department }),
+        });
+        announcements.unshift(created);
+        renderAllLists();
+        document.getElementById("announcement-title").value = "";
+        document.getElementById("announcement-body").value = "";
+        switchTab("sent");
+        selectAnnouncement(created.id);
+    } catch (e) {
+        console.error("Failed to post announcement:", e);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function init() {
+    try {
+        const data = await api("/api/v1/announcements/");
+        announcements = Array.isArray(data) ? data : (data.results ?? []);
+        renderAllLists();
+    } catch (e) {
+        console.error("Failed to load announcements:", e);
+    }
+}
+
+document.querySelectorAll(".announcement-tab").forEach(tab =>
+    tab.addEventListener("click", () => switchTab(tab.dataset.tab))
+);
+
+const btnPost = document.getElementById("btn-post");
+if (btnPost) btnPost.addEventListener("click", postAnnouncement);
+
+init();
 </script>
 {% endblock %}

@@ -3,10 +3,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Smart Scheduler{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'scheduling/css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}">
+    <link rel="stylesheet" href="{% static 'scheduling/css/base.css' %}?v=20260519c">
+    <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}?v=20260519c">
     {% block page_css %}{% endblock %}
 </head>
 <body data-route="{{ request.resolver_match.url_name|default:'page' }}">
@@ -18,7 +18,7 @@
             {% block content %}{% endblock %}
         </main>
     </div>
-    <script src="{% static 'scheduling/js/navbar.js' %}"></script>
+    <script src="{% static 'scheduling/js/navbar.js' %}?v=20260519b"></script>
     {% block page_js %}{% endblock %}
 </body>
 </html>

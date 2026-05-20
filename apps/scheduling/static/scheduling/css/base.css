@@ -12,10 +12,31 @@
     --radius-lg: 28px;
     --radius-md: 18px;
     --radius-sm: 12px;
+
+    /* Department colours */
+    --dept-foh-bg: rgba(201, 108, 43, 0.12);
+    --dept-foh-border: rgba(201, 108, 43, 0.38);
+    --dept-foh-text: #8d4013;
+    --dept-boh-bg: rgba(45, 100, 160, 0.10);
+    --dept-boh-border: rgba(45, 100, 160, 0.32);
+    --dept-boh-text: #1d4e82;
+    --dept-mgmt-bg: rgba(110, 60, 160, 0.10);
+    --dept-mgmt-border: rgba(110, 60, 160, 0.32);
+    --dept-mgmt-text: #5a2d8c;
 }
 
 * {
     box-sizing: border-box;
+}
+
+html,
+body {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+[hidden] {
+    display: none !important;
 }
 
 body {
@@ -45,10 +66,20 @@ textarea {
 }
 
 .app-header {
-    position: sticky;
-    top: 0;
-    z-index: 50;
     padding: 1.2rem clamp(1rem, 2.4vw, 2rem) 0;
+    transition: transform 300ms ease;
+}
+
+@media (min-width: 641px) {
+    .app-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+
+    .app-header.is-scrolled-away {
+        transform: translateY(-110%);
+    }
 }
 
 .app-main {
@@ -97,6 +128,18 @@ textarea {
     color: var(--accent-deep);
     font-size: 0.85rem;
     font-weight: 600;
+}
+
+.pill--published {
+    background: rgba(40, 140, 60, 0.12);
+    border-color: rgba(40, 140, 60, 0.22);
+    color: #1a6b3a;
+}
+
+.pill--unpublished {
+    background: rgba(200, 150, 20, 0.1);
+    border-color: rgba(200, 150, 20, 0.2);
+    color: #7a5800;
 }
 
 .button-primary,
@@ -171,6 +214,52 @@ textarea {
     resize: vertical;
 }
 
+.day-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.day-picker__days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.day-picker__shortcuts {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.day-picker__shortcuts .button-ghost {
+    font-size: 0.82rem;
+    padding: 0.3rem 0.7rem;
+}
+
+.day-toggle {
+    padding: 0.38rem 0.78rem;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(75, 58, 44, 0.2);
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--ink);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.day-toggle:hover {
+    border-color: var(--accent);
+    background: rgba(201, 157, 102, 0.15);
+}
+
+.day-toggle.is-selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
 .empty-state {
     padding: 1rem;
     border: 1px dashed rgba(75, 58, 44, 0.22);
@@ -243,5 +332,11 @@ textarea {
 
     .form-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .app-main {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 1rem);
     }
 }

@@ -1,3 +1,12 @@
+const appHeader = document.querySelector(".app-header");
+
+if (appHeader) {
+    let headerHeight = appHeader.offsetHeight;
+    window.addEventListener("scroll", () => {
+        appHeader.classList.toggle("is-scrolled-away", window.scrollY > headerHeight);
+    }, { passive: true });
+}
+
 const route = document.body.dataset.route;
 const navToggle = document.getElementById("nav-toggle");
 const navLinks = document.getElementById("nav-links");

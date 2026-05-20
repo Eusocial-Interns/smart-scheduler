@@ -1,194 +1,227 @@
 {% extends 'scheduling/base.html' %}
 {% load static %}
 
-{% block title %}Shift Calendar{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block page_css %}
 <link rel="stylesheet" href="{% static 'scheduling/css/calendar.css' %}">
 {% endblock %}
 
 {% block content %}
-<section class="calendar-page">
-    <div class="calendar-hero page-card">
+<div class="dashboard" id="dashboard">
+
+  <!-- HERO -->
+  <header class="dash-hero page-card">
+    <div class="dash-hero__text">
+      <p class="section-eyebrow" id="dash-role-label">Loading</p>
+      <h1 class="section-title" id="dash-greeting">Welcome back</h1>
+    </div>
+    <div class="dash-hero__meta" id="dash-hero-actions"></div>
+  </header>
+
+  <!-- EMPLOYEE VIEW -->
+  <div id="employee-view" hidden>
+
+    <section class="dash-section page-card">
+      <div class="dash-section__header">
         <div>
-            <p class="section-eyebrow">Scheduling Workspace</p>
-            <h1 class="section-title">Build weekly coverage without losing the human context.</h1>
-            <p class="section-copy">
-                Navigate the month, review assignments by day, and create new shifts from the same screen.
-            </p>
+          <p class="section-eyebrow">Your Schedule</p>
+          <h2 class="dash-section__title">Next 7 days</h2>
         </div>
-        <div class="calendar-hero__actions">
-                <button class="button-ghost" id="open-employee-modal" type="button">Add Employee</button>
-            <div class="calendar-hero__buttons">
-                <button style='visibility: hidden; pointer-events: none;' class="button-ghost" id="open-employee-modal" type="button">Add Employee</button>
-                <button class="button-primary" id="open-shift-modal" type="button">Add Shift</button>
-            </div>
+        <a class="button-ghost button-ghost--small" href="{% url 'weekly_schedule' %}">Full schedule</a>
+      </div>
+      <div id="upcoming-shifts-list" class="shift-list">
+        <div class="empty-state">Loading your shifts…</div>
+      </div>
+    </section>
+
+    <section class="dash-section page-card" id="incoming-swaps-section" hidden>
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">Action Required</p>
+          <h2 class="dash-section__title">Swap requests for you</h2>
         </div>
-    </div>
+      </div>
+      <div id="incoming-swaps-dash-list" class="approval-list"></div>
+    </section>
 
-    <div class="calendar-layout">
-        <section class="calendar-board page-card">
-            <div class="calendar-board__header">
-                <div class="calendar-board__intro">
-                    <p class="section-eyebrow">Month View</p>
-                    <h2 class="calendar-board__title" id="monthAndYear"></h2>
-                    <p class="calendar-board__copy">Scan the month, click any day for full detail, and manage coverage without leaving this screen.</p>
-                </div>
-                <div class="calendar-board__controls">
-                    <button class="button-ghost" id="previous" type="button">Previous</button>
-                    <button class="button-secondary" id="today-button" type="button">Today</button>
-                    <button class="button-ghost" id="next" type="button">Next</button>
-                </div>
-            </div>
-
-            <div class="calendar-board__toolbar">
-                <div class="field">
-                    <label for="month">Jump to month</label>
-                    <select id="month"></select>
-                </div>
-                <div class="field">
-                    <label for="year">Jump to year</label>
-                    <select id="year"></select>
-                </div>
-            </div>
-
-            <div class="metrics-strip">
-                <div class="metrics-strip__card">
-                    <span class="metrics-strip__label">Employees</span>
-                    <strong id="employee-count">0</strong>
-                </div>
-                <div class="metrics-strip__card">
-                    <span class="metrics-strip__label">Roles</span>
-                    <strong id="role-count">0</strong>
-                </div>
-                <div class="metrics-strip__card">
-                    <span class="metrics-strip__label">Shifts This Month</span>
-                    <strong id="shift-count">0</strong>
-                </div>
-                <div class="metrics-strip__card">
-                    <span class="metrics-strip__label">Assignments</span>
-                    <strong id="assignment-count">0</strong>
-                </div>
-            </div>
-
-            <div class="calendar-grid" id="calendar-grid"></div>
-        </section>
-
-        <aside class="calendar-sidebar">
-            <section class="sidebar-panel sidebar-panel--focus page-card">
-                <div class="sidebar-panel__header">
-                    <div>
-                        <p class="section-eyebrow">Selected Day</p>
-                        <h2 class="sidebar-panel__title" id="selected-day-title">Choose a day</h2>
-                    </div>
-                    <span class="pill">Daily detail</span>
-                </div>
-                <div id="selected-day-shifts" class="selected-day-shifts">
-                    <div class="empty-state">Pick a date on the calendar to review the scheduled shifts.</div>
-                </div>
-                <div class="sidebar-divider"></div>
-                <div class="sidebar-panel__subsection">
-                    <p class="section-eyebrow">Staff This Shift</p>
-                    <form id="assignment-form" class="assignment-form">
-                        <div class="field">
-                            <label for="assignment-shift">Shift</label>
-                            <select id="assignment-shift" required>
-                                <option value="">Select a shift</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label for="assignment-employee">Employee</label>
-                            <select id="assignment-employee" required>
-                                <option value="">Select an employee</option>
-                            </select>
-                        </div>
-                        <button class="button-primary" type="submit">Assign to Shift</button>
-                    </form>
-                </div>
-                <div class="sidebar-divider"></div>
-                <div class="sidebar-panel__subsection">
-                    <div class="sidebar-panel__mini-header">
-                        <p class="section-eyebrow">Team</p>
-                        <button class="button-ghost button-ghost--small" id="open-employee-modal-inline" type="button">New Employee</button>
-                    </div>
-                    <div id="employee-roster" class="employee-roster">
-                        <div class="empty-state">No employees added yet.</div>
-                    </div>
-                </div>
-            </section>
-        </aside>
-    </div>
-
-    <div class="status-banner" id="calendar-status"></div>
-</section>
-
-<div class="modal" id="shift-modal" aria-hidden="true">
-    <div class="modal__panel">
-        <div class="modal__header">
-            <div>
-                <p class="section-eyebrow">Create Shift</p>
-                <h2 class="section-title">Add a shift to the schedule</h2>
-            </div>
-            <button class="button-ghost" id="close-shift-modal" type="button">Close</button>
+    <section class="dash-section page-card" id="claimable-giveaways-section" hidden>
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">Shifts up for grabs</p>
+          <h2 class="dash-section__title">Available to cover</h2>
         </div>
+      </div>
+      <div id="claimable-giveaways-list" class="shift-list"></div>
+    </section>
 
-        <form id="shift-form" class="form-grid">
-            <div class="field">
-                <label for="shift-title">Shift title</label>
-                <input id="shift-title" name="title" type="text" placeholder="Lunch service" required>
-            </div>
-            <div class="field">
-                <label for="shift-role">Role</label>
-                <select id="shift-role" name="role">
-                    <option value="">Select a role</option>
-                </select>
-            </div>
-            <div class="field">
-                <label for="shift-start">Start</label>
-                <input id="shift-start" name="start_time" type="datetime-local" required>
-            </div>
-            <div class="field">
-                <label for="shift-end">End</label>
-                <input id="shift-end" name="end_time" type="datetime-local" required>
-            </div>
-            <div class="field field--full">
-                <label for="shift-notes">Notes</label>
-                <textarea id="shift-notes" name="notes" placeholder="Anything the team should know?"></textarea>
-            </div>
-            <div class="field field--full">
-                <button class="button-primary" type="submit">Create Shift</button>
-            </div>
+    <section class="dash-section page-card">
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">Open Shifts</p>
+          <h2 class="dash-section__title">Available to pick up</h2>
+        </div>
+      </div>
+      <div id="open-shifts-employee-list" class="shift-list">
+        <div class="empty-state">No open shifts right now.</div>
+      </div>
+    </section>
+
+    <section class="dash-section page-card">
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">My Requests</p>
+          <h2 class="dash-section__title">Pending items</h2>
+        </div>
+        <a class="button-ghost button-ghost--small" href="{% url 'requests' %}">All requests</a>
+      </div>
+      <div id="pending-requests-list" class="request-summary-list">
+        <div class="empty-state">No pending requests.</div>
+      </div>
+    </section>
+
+    <section class="dash-section page-card">
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">From the Manager</p>
+          <h2 class="dash-section__title">Announcements</h2>
+        </div>
+      </div>
+      <div id="announcements-employee-list" class="announcement-list">
+        <div class="empty-state">No announcements yet.</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- MANAGER VIEW -->
+  <div id="manager-view" hidden>
+
+    <section class="dash-section page-card" id="manager-upcoming-section" hidden>
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">Your Schedule</p>
+          <h2 class="dash-section__title">Next 7 days</h2>
+        </div>
+        <a class="button-ghost button-ghost--small" href="{% url 'weekly_schedule' %}">Full schedule</a>
+      </div>
+      <div id="manager-upcoming-list" class="shift-list"></div>
+    </section>
+
+    <section class="dash-section page-card">
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">Approval Queue</p>
+          <h2 class="dash-section__title">Pending requests</h2>
+        </div>
+        <span class="pill" id="pending-count-pill">0 pending</span>
+      </div>
+      <div id="manager-queue-list" class="approval-list">
+        <div class="empty-state">No pending requests — all clear.</div>
+      </div>
+    </section>
+
+    <section class="dash-section page-card">
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">Open Shifts</p>
+          <h2 class="dash-section__title">Unassigned slots</h2>
+        </div>
+      </div>
+      <div id="open-shifts-manager-list" class="shift-list">
+        <div class="empty-state">No open shifts posted.</div>
+      </div>
+    </section>
+
+    <section class="dash-section page-card" id="manager-my-requests-section" hidden>
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">My Requests</p>
+          <h2 class="dash-section__title">Your pending items</h2>
+        </div>
+        <a class="button-ghost button-ghost--small" href="{% url 'requests' %}">All requests</a>
+      </div>
+      <div id="manager-my-requests-list" class="request-summary-list"></div>
+    </section>
+
+    <section class="dash-section page-card">
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">Announcements</p>
+          <h2 class="dash-section__title">Team messages</h2>
+        </div>
+        <button class="button-primary button--small" id="open-announcement-form" type="button">Post</button>
+      </div>
+      <div id="announcement-form-wrap" class="announcement-form-wrap" hidden>
+        <form id="announcement-form" class="announcement-form">
+          <div class="field">
+            <label for="ann-title">Title</label>
+            <input id="ann-title" type="text" placeholder="Schedule update, reminder…" required>
+          </div>
+          <div class="field">
+            <label for="ann-dept">For</label>
+            <select id="ann-dept">
+              <option value="all">All Departments</option>
+              <option value="foh">Front of House</option>
+              <option value="boh">Back of House</option>
+              <option value="management">Management</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="ann-body">Message</label>
+            <textarea id="ann-body" rows="3" placeholder="What does the team need to know?" required></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="button-primary" type="submit">Post Announcement</button>
+            <button class="button-ghost" type="button" id="cancel-announcement">Cancel</button>
+          </div>
         </form>
-    </div>
+      </div>
+      <div id="announcements-manager-list" class="announcement-list">
+        <div class="empty-state">No announcements yet.</div>
+      </div>
+    </section>
+
+  </div>
+
 </div>
 
-<div class="modal" id="employee-modal" aria-hidden="true">
-    <div class="modal__panel modal__panel--compact">
-        <div class="modal__header">
-            <div>
-                <p class="section-eyebrow">Create Employee</p>
-                <h2 class="section-title">Add a team member</h2>
-            </div>
-            <button class="button-ghost" id="close-employee-modal" type="button">Close</button>
-        </div>
+<div class="status-banner" id="dash-status"></div>
 
-        <form id="employee-form" class="form-grid">
-            <div class="field">
-                <label for="employee-name">Full name</label>
-                <input id="employee-name" name="name" type="text" placeholder="Adriana Lopez" required>
-            </div>
-            <div class="field">
-                <label for="employee-email">Email</label>
-                <input id="employee-email" name="email" type="email" placeholder="adriana@example.com" required>
-            </div>
-            <div class="field field--full">
-                <button class="button-primary" type="submit">Create Employee</button>
-            </div>
-        </form>
+<!-- SHIFT ACTION SHEET -->
+<div class="shift-sheet-overlay" id="shift-sheet-overlay" hidden>
+  <div class="shift-sheet" role="dialog" aria-modal="true">
+    <div class="shift-sheet__head">
+      <div>
+        <p class="section-eyebrow">Your shift</p>
+        <h2 class="shift-sheet__title" id="sheet-shift-title"></h2>
+        <p class="shift-sheet__meta" id="sheet-shift-meta"></p>
+      </div>
+      <button class="shift-sheet__close" id="shift-sheet-close" type="button" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
+
+    <div class="shift-sheet__block">
+      <p class="shift-sheet__block-label">Give Away</p>
+      <select class="shift-sheet__select" id="sheet-giveaway-target">
+        <option value="">Anyone (open giveaway)</option>
+      </select>
+      <textarea class="shift-sheet__textarea" id="sheet-giveaway-reason" rows="2" placeholder="Reason (optional)"></textarea>
+      <button class="button-primary" id="sheet-giveaway-btn" type="button">Post Giveaway</button>
+    </div>
+
+    <div class="shift-sheet__block">
+      <p class="shift-sheet__block-label">Propose Trade</p>
+      <select class="shift-sheet__select" id="sheet-trade-target">
+        <option value="">Loading teammates' shifts…</option>
+      </select>
+      <textarea class="shift-sheet__textarea" id="sheet-trade-reason" rows="2" placeholder="Reason (optional)"></textarea>
+      <button class="button-primary" id="sheet-trade-btn" type="button">Propose Trade</button>
+    </div>
+  </div>
 </div>
 
-{% include 'scheduling/partials/shift_card.html' %}
 {% endblock %}
 
 {% block page_js %}
