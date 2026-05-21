@@ -4,6 +4,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 from django.utils import timezone
 
 
@@ -195,6 +197,8 @@ class ScheduleWeek(models.Model):
         related_name="published_schedule_weeks",
     )
     department_statuses = models.JSONField(default=dict, blank=True)
+    has_unpublished_changes = models.BooleanField(default=False)
+    published_shifts_snapshot = models.JSONField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -210,18 +214,24 @@ class ScheduleWeek(models.Model):
     def week_end(self):
         return self.week_start + timedelta(days=6)
 
-    def publish(self, user=None):
+    def publish(self, user=None, shift_snapshot=None):
         self.status = self.STATUS_PUBLISHED
+        self.has_unpublished_changes = False
         self.published_at = timezone.now()
+        if shift_snapshot is not None:
+            self.published_shifts_snapshot = shift_snapshot
         if user and user.is_authenticated:
             self.published_by = user
         self.save()
 
-    def publish_department(self, department, user=None):
+    def publish_department(self, department, user=None, shift_snapshot=None):
         statuses = dict(self.department_statuses)
         statuses[department] = self.STATUS_PUBLISHED
         self.department_statuses = statuses
+        self.has_unpublished_changes = False
         self.published_at = timezone.now()
+        if shift_snapshot is not None:
+            self.published_shifts_snapshot = shift_snapshot
         if user and user.is_authenticated:
             self.published_by = user
         self.save()
@@ -491,6 +501,11 @@ class Shift(models.Model):
             )
         self.full_clean()
         super().save(*args, **kwargs)
+        if self.schedule_week_id:
+            ScheduleWeek.objects.filter(
+                pk=self.schedule_week_id,
+                status=ScheduleWeek.STATUS_PUBLISHED,
+            ).update(has_unpublished_changes=True)
 
     def __str__(self):
         return f"{self.title} ({self.start_time} to {self.end_time})"
@@ -793,3 +808,51 @@ class ClosedDay(models.Model):
 
     def __str__(self):
         return str(self.date)
+
+
+def _mark_week_dirty(schedule_week_id):
+    if schedule_week_id:
+        ScheduleWeek.objects.filter(
+            pk=schedule_week_id,
+            status=ScheduleWeek.STATUS_PUBLISHED,
+        ).update(has_unpublished_changes=True)
+
+
+def _sync_shift_open_status(shift_id):
+    """Recompute is_open for a shift based on current assignment count vs requirement."""
+    shift = Shift.objects.filter(pk=shift_id).first()
+    if not shift:
+        return
+    assignment_count = Assignment.objects.filter(shift_id=shift_id).count()
+    shift_start_local = timezone.localtime(shift.start_time)
+    requirement = StaffingRequirement.objects.filter(
+        role=shift.role,
+        title=shift.title,
+        day_of_week=shift_start_local.weekday(),
+        start_time=shift_start_local.time(),
+        is_active=True,
+    ).first()
+    required_count = requirement.required_count if requirement else 1
+    is_open = assignment_count < required_count
+    Shift.objects.filter(pk=shift_id).update(is_open=is_open)
+
+
+@receiver(post_delete, sender=Shift)
+def _shift_deleted(sender, instance, **kwargs):
+    _mark_week_dirty(instance.schedule_week_id)
+
+
+@receiver(post_save, sender=Assignment)
+def _assignment_saved(sender, instance, created, **kwargs):
+    shift = Shift.objects.filter(pk=instance.shift_id).select_related("schedule_week").first()
+    if shift:
+        _mark_week_dirty(shift.schedule_week_id)
+        _sync_shift_open_status(instance.shift_id)
+
+
+@receiver(post_delete, sender=Assignment)
+def _assignment_deleted(sender, instance, **kwargs):
+    shift = Shift.objects.filter(pk=instance.shift_id).select_related("schedule_week").first()
+    if shift:
+        _mark_week_dirty(shift.schedule_week_id)
+        _sync_shift_open_status(instance.shift_id)

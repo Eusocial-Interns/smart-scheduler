@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Smart Scheduler{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'scheduling/css/base.css' %}?v=20260519c">
-    <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}?v=20260519c">
+    <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}?v=20260521a">
     {% block page_css %}{% endblock %}
 </head>
 <body data-route="{{ request.resolver_match.url_name|default:'page' }}">
@@ -19,6 +19,37 @@
         </main>
     </div>
     <script src="{% static 'scheduling/js/navbar.js' %}?v=20260519b"></script>
+    <script>
+    (function () {
+        const badge = document.getElementById("nav-pending-badge");
+        const badgeMobile = document.getElementById("nav-pending-badge-mobile");
+        function updateBadge(count) {
+            [badge, badgeMobile].forEach(el => {
+                if (!el) return;
+                if (count > 0) {
+                    el.textContent = count > 99 ? "99+" : count;
+                    el.hidden = false;
+                } else {
+                    el.hidden = true;
+                }
+            });
+        }
+        async function pollPending() {
+            try {
+                const r = await fetch("/api/v1/pending-count/", { credentials: "same-origin" });
+                if (r.ok) {
+                    const data = await r.json();
+                    updateBadge(data.count || 0);
+                }
+            } catch (_) {}
+        }
+        pollPending();
+        setInterval(pollPending, 60000);
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") pollPending();
+        });
+    })();
+    </script>
     {% block page_js %}{% endblock %}
 </body>
 </html>

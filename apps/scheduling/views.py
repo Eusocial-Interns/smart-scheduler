@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
@@ -313,6 +314,103 @@ class StaffingRequirementViewSet(viewsets.ModelViewSet):
         translate_django_validation(lambda: serializer.save())
 
 
+def _notify_managers_pickup(swap_request, requester):
+    manager_emails = list(
+        Employee.objects.filter(account_type=Employee.ACCOUNT_TYPE_MANAGER)
+        .exclude(email="")
+        .values_list("email", flat=True)
+    )
+    if not manager_emails:
+        return
+    shift = swap_request.shift
+    shift_start = timezone.localtime(shift.start_time)
+    role_name = shift.role.name if shift.role else "Shift"
+    date_str = shift_start.strftime("%A, %B %-d")
+    time_str = shift_start.strftime("%-I:%M %p")
+    subject = f"Pickup request: {requester.name} wants {role_name} on {date_str}"
+    body = (
+        f"{requester.name} has volunteered to pick up the following open shift:\n\n"
+        f"  Position: {role_name}\n"
+        f"  Shift: {shift.title}\n"
+        f"  Date: {date_str}\n"
+        f"  Time: {time_str}\n\n"
+        f"Log in to approve or deny this request from the Requests page."
+    )
+    try:
+        send_mail(subject, body, None, manager_emails, fail_silently=True)
+    except Exception:
+        pass
+
+
+def _build_shift_snapshot(schedule_week):
+    def fmt_time(dt):
+        return dt.strftime("%I:%M %p").lstrip("0")
+
+    shifts = (
+        Shift.objects.select_related("role")
+        .prefetch_related("assignments__employee")
+        .filter(
+            start_time__date__gte=schedule_week.week_start,
+            start_time__date__lte=schedule_week.week_end,
+        )
+        .order_by("start_time")
+    )
+    requirements = StaffingRequirement.objects.filter(is_active=True)
+    roles_map = {}
+    for shift in shifts:
+        role_name = shift.role.name if shift.role else "General"
+        if role_name not in roles_map:
+            roles_map[role_name] = {
+                "role_id": shift.role_id,
+                "role_name": role_name,
+                "role_department": shift.role.department if shift.role else None,
+                "days": {str(i): [] for i in range(7)},
+            }
+        shift_start = timezone.localtime(shift.start_time)
+        shift_end = timezone.localtime(shift.end_time)
+        day_index = (shift_start.date() - schedule_week.week_start).days
+        if day_index < 0 or day_index > 6:
+            continue
+        assignments = list(shift.assignments.all())
+        for assignment in assignments:
+            roles_map[role_name]["days"][str(day_index)].append({
+                "assignment_id": assignment.id,
+                "employee_id": assignment.employee_id,
+                "shift_id": shift.id,
+                "shift_title": shift.title,
+                "role_id": shift.role_id,
+                "employee_name": assignment.employee.name,
+                "start_time": shift_start.isoformat(),
+                "end_time": shift_end.isoformat(),
+                "display_time": f"Arrive {fmt_time(shift_start)}",
+                "notes": shift.notes,
+                "is_open": False,
+            })
+        matching_req = requirements.filter(
+            role=shift.role,
+            title=shift.title,
+            day_of_week=shift_start.weekday(),
+            start_time=shift_start.time(),
+        ).first()
+        required_count = matching_req.required_count if matching_req else 0
+        open_count = max(required_count - len(assignments), 0)
+        for _ in range(open_count):
+            roles_map[role_name]["days"][str(day_index)].append({
+                "assignment_id": None,
+                "employee_id": None,
+                "shift_id": shift.id,
+                "shift_title": shift.title,
+                "role_id": shift.role_id,
+                "employee_name": "Open",
+                "start_time": shift_start.isoformat(),
+                "end_time": shift_end.isoformat(),
+                "display_time": f"Arrive {fmt_time(shift_start)}",
+                "notes": "",
+                "is_open": True,
+            })
+    return list(roles_map.values())
+
+
 class ScheduleWeekViewSet(viewsets.ModelViewSet):
     serializer_class = ScheduleWeekSerializer
     permission_classes = [IsManagerOrReadOnlySchedulingUser]
@@ -388,10 +486,11 @@ class ScheduleWeekViewSet(viewsets.ModelViewSet):
 
         department = request.data.get("department") or None
         schedule_week, _ = ScheduleWeek.objects.get_or_create(week_start=week_start)
+        snapshot = _build_shift_snapshot(schedule_week)
         if department:
-            schedule_week.publish_department(department, request.user)
+            schedule_week.publish_department(department, request.user, shift_snapshot=snapshot)
         else:
-            schedule_week.publish(request.user)
+            schedule_week.publish(request.user, shift_snapshot=snapshot)
         serializer = self.get_serializer(schedule_week)
         return Response(serializer.data)
 
@@ -896,7 +995,23 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
         if request_type == ShiftSwapRequest.TYPE_PICKUP:
             extra["coverer"] = profile
             extra["coverer_approved"] = True
-        translate_django_validation(lambda: serializer.save(**extra))
+        if request_type == ShiftSwapRequest.TYPE_GIVEAWAY:
+            requested_employee = serializer.validated_data.get("requested_employee")
+            shift = serializer.validated_data.get("shift")
+            if requested_employee and shift:
+                shift_date = timezone.localtime(shift.start_time).date()
+                already_scheduled = Assignment.objects.filter(
+                    employee=requested_employee,
+                    shift__start_time__date=shift_date,
+                    shift__schedule_week__status=ScheduleWeek.STATUS_PUBLISHED,
+                ).exists()
+                if already_scheduled:
+                    raise ValidationError(
+                        f"{requested_employee.name} is already scheduled on that day and cannot receive this shift."
+                    )
+        instance = translate_django_validation(lambda: serializer.save(**extra))
+        if request_type == ShiftSwapRequest.TYPE_PICKUP and instance:
+            _notify_managers_pickup(instance, profile)
 
     def perform_update(self, serializer):
         translate_django_validation(lambda: serializer.save())
@@ -925,6 +1040,13 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
                 raise ValidationError("This shift has already been claimed.")
             if instance.requested_employee_id and profile.pk != instance.requested_employee_id:
                 raise PermissionDenied("This giveaway is directed at a specific employee.")
+            shift_date = timezone.localtime(instance.shift.start_time).date()
+            if Assignment.objects.filter(
+                employee=profile,
+                shift__start_time__date=shift_date,
+                shift__schedule_week__status=ScheduleWeek.STATUS_PUBLISHED,
+            ).exists():
+                raise ValidationError("You are already scheduled on this day and cannot claim this shift.")
             instance.coverer = profile
         else:
             raise ValidationError("Pickup requests are approved directly by managers.")
@@ -1023,6 +1145,13 @@ class WeeklyScheduleAPIView(APIView):
                     "week_end": week_end.isoformat(),
                     "status": schedule_week.status if schedule_week else ScheduleWeek.STATUS_DRAFT,
                     "department_statuses": schedule_week.department_statuses if schedule_week else {},
+                    "has_unpublished_changes": schedule_week.has_unpublished_changes if schedule_week else False,
+                    "published_at": schedule_week.published_at.isoformat() if schedule_week and schedule_week.published_at else None,
+                    "published_snapshot": (
+                        schedule_week.published_shifts_snapshot
+                        if schedule_week and schedule_week.has_unpublished_changes and schedule_week.published_shifts_snapshot
+                        else None
+                    ),
                     "days": [
                         {
                             "index": i,
@@ -1138,6 +1267,13 @@ class WeeklyScheduleAPIView(APIView):
                 "week_end": week_end.isoformat(),
                 "status": schedule_week.status if schedule_week else ScheduleWeek.STATUS_DRAFT,
                 "department_statuses": schedule_week.department_statuses if schedule_week else {},
+                "has_unpublished_changes": schedule_week.has_unpublished_changes if schedule_week else False,
+                "published_at": schedule_week.published_at.isoformat() if schedule_week and schedule_week.published_at else None,
+                "published_snapshot": (
+                    schedule_week.published_shifts_snapshot
+                    if schedule_week and schedule_week.has_unpublished_changes and schedule_week.published_shifts_snapshot
+                    else None
+                ),
                 "days": [
                     {
                         "index": (day - week_start).days,
@@ -1255,6 +1391,24 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         AnnouncementRead.objects.filter(announcement=announcement, employee=profile).delete()
         serializer = self.get_serializer(announcement)
         return Response(serializer.data)
+
+
+class PendingCountAPIView(APIView):
+    permission_classes = [IsAuthenticatedSchedulingUser]
+
+    def get(self, request):
+        if not user_is_manager(request.user):
+            return Response({"count": 0})
+        count = ShiftSwapRequest.objects.filter(
+            status=REQUEST_STATUS_PENDING,
+        ).exclude(
+            Q(request_type=ShiftSwapRequest.TYPE_SWAP) |
+            Q(request_type=ShiftSwapRequest.TYPE_GIVEAWAY, requested_employee__isnull=False),
+            coverer_approved=False,
+        ).count()
+        count += TimeOffRequest.objects.filter(status=REQUEST_STATUS_PENDING).count()
+        count += AvailabilityChangeRequest.objects.filter(status=REQUEST_STATUS_PENDING).count()
+        return Response({"count": count})
 
 
 class DashboardAPIView(APIView):
@@ -1378,7 +1532,6 @@ class DashboardAPIView(APIView):
                 start_time__date__gte=today,
                 **({"role_id__in": employee_role_ids} if employee_role_ids else {}),
             )
-            .filter(emp_shift_visibility_q)
             .select_related("role")
             .order_by("start_time")[:10]
         )
@@ -1407,7 +1560,6 @@ class DashboardAPIView(APIView):
                 employee=profile,
                 shift__start_time__date__gte=today,
             )
-            .filter(emp_assignment_visibility_q)
             .values_list("shift__start_time__date", flat=True)
         )
         pending_swaps = list(
@@ -1459,7 +1611,18 @@ class DashboardAPIView(APIView):
             .filter(Q(department="all") | Q(department__in=emp_depts))
             .order_by("-created_at")[:8]
         )
+        pending_pickup_shift_ids = set(
+            ShiftSwapRequest.objects.filter(
+                coverer=profile,
+                request_type=ShiftSwapRequest.TYPE_PICKUP,
+                status=REQUEST_STATUS_PENDING,
+            ).values_list("shift_id", flat=True)
+        )
         ann_context = self._announcement_serializer_context(request, announcements)
+        open_shift_data = [
+            {**s, "has_pending_pickup": s["shift_id"] in pending_pickup_shift_ids}
+            for s in self._format_shifts(open_shifts)
+        ]
         return Response({
             "role": "employee",
             "upcoming_shifts": self._format_upcoming(upcoming_assignments),
@@ -1467,7 +1630,7 @@ class DashboardAPIView(APIView):
             "pending_availability": AvailabilityChangeRequestSerializer(pending_availability, many=True).data,
             "pending_swaps": ShiftSwapRequestSerializer(pending_swaps, many=True).data,
             "incoming_swaps": ShiftSwapRequestSerializer(incoming_swaps, many=True).data,
-            "open_shifts": self._format_shifts(open_shifts),
+            "open_shifts": open_shift_data,
             "claimable_giveaways": ShiftSwapRequestSerializer(claimable_giveaways, many=True).data,
             "announcements": AnnouncementSerializer(announcements, many=True, context=ann_context).data,
         })

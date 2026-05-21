@@ -145,10 +145,9 @@ function populateSelect(selectId, options, valueFn, labelFn) {
 }
 
 function shiftLabel(s) {
-  const start = new Date(s.start_time);
-  const day = start.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-  const time = start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  return `${s.title} · ${day} ${time}`;
+  const role = s.role_name || s.title || "Shift";
+  const type = s.title && s.title !== role ? ` (${s.title})` : "";
+  return `${s.date_label} · ${role}${type} · ${s.start_display} – ${s.end_display}`;
 }
 
 async function loadGiveawayTargets(shiftId) {
@@ -399,8 +398,8 @@ async function loadMyRequests() {
 function fmtSwapDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
-    + " · " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })
+    + " · " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
 }
 
 function renderSwapCard(item) {

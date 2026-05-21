@@ -54,6 +54,7 @@ const state = {
     newShiftTarget: null,
     pendingForceAssign: null,
     activeDepartment: null,  // null = All, "foh" | "boh" | "management"
+    viewingSnapshot: false,
 };
 
 const dayOptions = [
@@ -78,6 +79,7 @@ function bootstrapWeeklySchedule() {
     document.getElementById("previous-week").addEventListener("click", () => {
         state.weekStart.setDate(state.weekStart.getDate() - 7);
         state.lastGenerationSummary = null;
+        state.viewingSnapshot = false;
         loadSchedule();
         loadClosedDays();
     });
@@ -85,6 +87,7 @@ function bootstrapWeeklySchedule() {
     document.getElementById("next-week").addEventListener("click", () => {
         state.weekStart.setDate(state.weekStart.getDate() + 7);
         state.lastGenerationSummary = null;
+        state.viewingSnapshot = false;
         loadSchedule();
         loadClosedDays();
     });
@@ -92,6 +95,7 @@ function bootstrapWeeklySchedule() {
     document.getElementById("current-week").addEventListener("click", () => {
         state.weekStart = startOfWeek(new Date());
         state.lastGenerationSummary = null;
+        state.viewingSnapshot = false;
         loadSchedule();
         loadClosedDays();
     });
@@ -144,6 +148,14 @@ function bootstrapWeeklySchedule() {
     generateDraftButton.addEventListener("click", generateDraft);
     copyLastWeekButton.addEventListener("click", copyLastWeek);
     publishWeekButton.addEventListener("click", publishWeek);
+    document.getElementById("view-snapshot-btn").addEventListener("click", () => {
+        state.viewingSnapshot = true;
+        if (state.schedule) renderSchedule(state.schedule);
+    });
+    document.getElementById("back-to-draft-btn").addEventListener("click", () => {
+        state.viewingSnapshot = false;
+        if (state.schedule) renderSchedule(state.schedule);
+    });
     document.getElementById("dept-tabs").addEventListener("click", (e) => {
         const btn = e.target.closest(".dept-tab");
         if (!btn) return;
@@ -331,15 +343,70 @@ function renderSchedule(schedule) {
     let effectiveStatus = schedule.status;
     if (isManager() && state.activeDepartment) {
         const deptStatuses = schedule.department_statuses || {};
-        effectiveStatus = deptStatuses[state.activeDepartment] || "draft";
+        effectiveStatus = deptStatuses[state.activeDepartment] || schedule.status || "draft";
     }
     const isPublished = effectiveStatus === "published";
+    const hasPendingChanges = isPublished && schedule.has_unpublished_changes;
     if (isManager()) {
-        scheduleStatus.textContent = isPublished ? "Published" : "Unpublished";
-        scheduleStatus.className = `pill ${isPublished ? "pill--published" : "pill--unpublished"}`;
+        if (hasPendingChanges) {
+            scheduleStatus.textContent = "Changes Pending";
+            scheduleStatus.className = "pill pill--pending";
+        } else {
+            scheduleStatus.textContent = isPublished ? "Published" : "Unpublished";
+            scheduleStatus.className = `pill ${isPublished ? "pill--published" : "pill--unpublished"}`;
+        }
         scheduleStatus.hidden = false;
+        if (publishWeekButton) {
+            publishWeekButton.textContent = hasPendingChanges ? "Republish" : "Publish";
+        }
     } else {
         scheduleStatus.hidden = true;
+    }
+
+    // Reset viewingSnapshot if no snapshot is available
+    if (!hasPendingChanges || !schedule.published_snapshot) {
+        state.viewingSnapshot = false;
+    }
+
+    const snapshotBtn = document.getElementById("view-snapshot-btn");
+    const pendingBanner = document.getElementById("pending-changes-banner");
+    const snapshotBanner = document.getElementById("snapshot-banner");
+
+    if (isManager() && hasPendingChanges && schedule.published_snapshot) {
+        // Toggle button
+        if (snapshotBtn) {
+            snapshotBtn.hidden = false;
+            snapshotBtn.textContent = state.viewingSnapshot ? "Back to current draft" : "View published version";
+        }
+        // Banners
+        if (state.viewingSnapshot) {
+            if (pendingBanner) pendingBanner.hidden = true;
+            if (snapshotBanner && schedule.published_at) {
+                const lastPub = new Date(schedule.published_at);
+                const dateStr = lastPub.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                snapshotBanner.querySelector(".snapshot-banner__date").textContent = dateStr;
+                snapshotBanner.hidden = false;
+            }
+        } else {
+            if (snapshotBanner) snapshotBanner.hidden = true;
+            if (pendingBanner && schedule.published_at) {
+                const lastPub = new Date(schedule.published_at);
+                const dateStr = lastPub.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                pendingBanner.querySelector(".pending-banner__date").textContent = `Last published ${dateStr}`;
+                pendingBanner.hidden = false;
+            }
+        }
+        // Disable editing controls in snapshot mode
+        if (generateDraftButton) generateDraftButton.disabled = state.viewingSnapshot;
+        if (copyLastWeekButton) copyLastWeekButton.disabled = state.viewingSnapshot;
+        if (publishWeekButton) publishWeekButton.disabled = state.viewingSnapshot;
+    } else {
+        if (snapshotBtn) snapshotBtn.hidden = true;
+        if (snapshotBanner) snapshotBanner.hidden = true;
+        if (pendingBanner) pendingBanner.hidden = true;
+        if (generateDraftButton) generateDraftButton.disabled = false;
+        if (copyLastWeekButton) copyLastWeekButton.disabled = false;
+        if (publishWeekButton) publishWeekButton.disabled = false;
     }
 
     weeklyGrid.style.setProperty("--day-count", String(Math.max(schedule.days.length, 1)));
@@ -356,7 +423,9 @@ function renderSchedule(schedule) {
         `).join("")}
     `;
 
-    let rolesToRender = schedule.roles;
+    let rolesToRender = (state.viewingSnapshot && schedule.published_snapshot)
+        ? schedule.published_snapshot
+        : schedule.roles;
 
     // Department filter (manager only)
     if (isManager() && state.activeDepartment) {
@@ -585,7 +654,7 @@ function renderAssignment(assignment) {
         "Manager edited assignment.",
     ]);
     const notes = systemNotes.has(assignment.notes) ? "" : assignment.notes;
-    const canDrag = isManager() && assignment.assignment_id && !assignment.is_open;
+    const canDrag = isManager() && !state.viewingSnapshot && assignment.assignment_id && !assignment.is_open;
     const dataAttributes = [
         `data-shift-id="${assignment.shift_id}"`,
         assignment.assignment_id ? `data-assignment-id="${assignment.assignment_id}"` : "",
@@ -624,7 +693,7 @@ function isManager() {
 
 function startAssignmentDrag(event) {
     const card = event.target.closest(".weekly-assignment[data-assignment-id]");
-    if (!isManager() || !card) {
+    if (!isManager() || state.viewingSnapshot || !card) {
         return;
     }
 
@@ -651,7 +720,7 @@ function endAssignmentDrag() {
 
 function startEmployeeDrag(event) {
     const chip = event.target.closest(".employee-chip[data-employee-id]");
-    if (!isManager() || !chip) {
+    if (!isManager() || state.viewingSnapshot || !chip) {
         return;
     }
 
@@ -1033,7 +1102,7 @@ function dragTargetFor(event) {
 }
 
 function openShiftEditor(event) {
-    if (!isManager() || state.draggedAssignmentId || state.draggedEmployeeId) return;
+    if (!isManager() || state.viewingSnapshot || state.draggedAssignmentId || state.draggedEmployeeId) return;
 
     const openCard = event.target.closest(".weekly-assignment[data-open-slot='true']");
     if (openCard) {

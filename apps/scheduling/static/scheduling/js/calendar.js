@@ -62,9 +62,26 @@ function renderShiftCard(shift, opts = {}) {
   const numPart = parts[1]?.trim().split(" ")[1] ?? "";
   const isOpen = opts.isOpen;
   const isMine = opts.isMine;
+  const hasPendingPickup = !!shift.has_pending_pickup;
+
+  let actionHtml = "";
+  if (isOpen && opts.onPickup) {
+    if (hasPendingPickup) {
+      actionHtml = `
+        <div class="shift-card__action">
+          <span class="shift-card__pending-label">Pending Approval</span>
+          <button class="btn-pickup btn-pickup--volunteered" disabled>Volunteered</button>
+        </div>`;
+    } else {
+      actionHtml = `
+        <div class="shift-card__action">
+          <button class="btn-pickup" data-id="${shift.shift_id}">Volunteer</button>
+        </div>`;
+    }
+  }
 
   return `
-    <div class="shift-card${isOpen ? " shift-card--open" : ""}${isMine ? " shift-card--mine" : ""}"
+    <div class="shift-card${isOpen ? " shift-card--open" : ""}${isMine ? " shift-card--mine" : ""}${hasPendingPickup ? " shift-card--pending" : ""}"
          ${isMine ? `data-shift-id="${shift.shift_id}" data-assignment-id="${shift.assignment_id ?? ""}" role="button" tabindex="0"` : ""}>
       <div class="shift-card__date">
         <span class="shift-card__date-day">${dayPart}</span>
@@ -75,10 +92,7 @@ function renderShiftCard(shift, opts = {}) {
         <span class="shift-card__role">${shift.role ?? ""}</span>
       </div>
       <div class="shift-card__time">${shift.start_time ?? ""} – ${shift.end_time ?? ""}</div>
-      ${isOpen && opts.onPickup ? `
-        <div class="shift-card__action">
-          <button class="btn-pickup" data-id="${shift.shift_id}">Volunteer</button>
-        </div>` : ""}
+      ${actionHtml}
     </div>`;
 }
 
@@ -474,8 +488,8 @@ function openShiftSheet(shift) {
     select.innerHTML = '<option value="">Select a shift to trade for</option>';
     shifts.forEach(s => {
       const emp = s.assignments?.[0]?.employee_name ?? "Teammate";
-      const start = new Date(s.start_time);
-      const label = `${s.title} · ${emp} · ${start.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} ${start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+      const role = s.role_name || s.title || "Shift";
+      const label = `${role} · ${emp} · ${s.date_label} ${s.start_display}`;
       const o = document.createElement("option");
       o.value = s.id;
       o.dataset.employeeId = s.assignments?.[0]?.employee ?? "";

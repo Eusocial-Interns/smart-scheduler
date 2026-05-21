@@ -156,6 +156,26 @@
   align-items: flex-end;
 }
 
+.shift-card__pending-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--accent-deep, #b85a2a);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.shift-card--pending {
+  border-color: rgba(201, 108, 43, 0.35);
+  background: rgba(201, 108, 43, 0.06);
+}
+
+.btn-pickup--volunteered {
+  opacity: 0.55;
+  cursor: default;
+  background: transparent;
+  pointer-events: none;
+}
+
 /* APPROVAL LIST */
 .approval-list {
   display: flex;

@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils import timezone as tz
 from rest_framework import serializers
 
 from apps.scheduling.models import (
@@ -186,10 +187,22 @@ class ShiftSerializer(serializers.ModelSerializer):
     role_name = serializers.CharField(source="role.name", read_only=True)
     role_department = serializers.CharField(source="role.department", read_only=True)
     assignments = AssignmentSerializer(many=True, read_only=True)
+    date_label = serializers.SerializerMethodField()
+    start_display = serializers.SerializerMethodField()
+    end_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Shift
         fields = "__all__"
+
+    def get_date_label(self, obj):
+        return tz.localtime(obj.start_time).strftime("%a, %b %-d")
+
+    def get_start_display(self, obj):
+        return tz.localtime(obj.start_time).strftime("%-I:%M %p")
+
+    def get_end_display(self, obj):
+        return tz.localtime(obj.end_time).strftime("%-I:%M %p")
 
     def validate(self, attrs):
         instance = Shift(

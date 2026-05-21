@@ -117,6 +117,7 @@ def generate_schedule_from_requirements(week_start, department=None):
 
         open_count = max(requirement.required_count - assigned_count, 0)
         if open_count:
+            shift.__class__.objects.filter(pk=shift.pk).update(is_open=True)
             summary["open_slots"].append(
                 {
                     "role": requirement.role.name,
@@ -129,6 +130,8 @@ def generate_schedule_from_requirements(week_start, department=None):
                     "open_count": open_count,
                 }
             )
+        else:
+            shift.__class__.objects.filter(pk=shift.pk).update(is_open=False)
 
     return summary
 

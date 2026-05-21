@@ -64,10 +64,23 @@
         </div>
         <div class="weekly-toolbar__meta">
             <span class="pill" id="schedule-status" hidden></span>
+            <button class="button-ghost" id="view-snapshot-btn" type="button" hidden>View Published Version</button>
             <div class="weekly-toolbar__summary" id="coverage-summary" hidden>
                 Generate a draft to see coverage gaps.
             </div>
         </div>
+    </div>
+
+    <div class="pending-changes-banner" id="pending-changes-banner" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>This schedule has unpublished changes. Employees still see the previous version. <span class="pending-banner__date"></span></span>
+        <button class="button-primary pending-banner__cta" type="button" onclick="document.getElementById('publish-week').click()">Republish Now</button>
+    </div>
+
+    <div class="snapshot-banner" id="snapshot-banner" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Viewing the published version — <span class="snapshot-banner__date"></span>. Changes made since are not shown.</span>
+        <button class="button-ghost snapshot-banner__back" type="button" id="back-to-draft-btn">Back to current draft</button>
     </div>
 
     <section class="closed-days-panel page-card" id="closed-days-panel" hidden>

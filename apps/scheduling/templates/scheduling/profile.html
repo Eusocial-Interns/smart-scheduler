@@ -20,11 +20,13 @@
         </div>
         <div class="profile-hero__actions">
             <div class="profile-hero__badges" id="profile-badges"></div>
-            <a href="{% url 'password_reset' %}" class="button-ghost profile-logout">Reset Password</a>
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button class="button-ghost profile-logout" type="submit">Log Out</button>
-            </form>
+            <div class="profile-hero__btns">
+                <a href="{% url 'password_change' %}" class="button-ghost">Change Password</a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="button-ghost" type="submit">Log Out</button>
+                </form>
+            </div>
         </div>
     </div>
 
