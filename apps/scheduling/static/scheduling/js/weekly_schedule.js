@@ -32,9 +32,12 @@ const closedDayNoteRow = document.getElementById("closed-day-note-row");
 const closedDayNoteInput = document.getElementById("closed-day-note-input");
 const closedDayNoteSave = document.getElementById("closed-day-note-save");
 
+const _urlWeek = new URLSearchParams(window.location.search).get("week");
+const _initialWeek = _urlWeek ? new Date(_urlWeek + "T00:00:00") : startOfWeek(new Date());
+
 const state = {
     me: null,
-    weekStart: startOfWeek(new Date()),
+    weekStart: _initialWeek,
     schedule: null,
     roles: [],
     employees: [],

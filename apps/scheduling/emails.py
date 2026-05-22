@@ -17,7 +17,8 @@ def send_schedule_published(schedule_week, department, request):
     dept_label = {"foh": "Front of House", "boh": "Back of House"}.get(department)
 
     subject = f"Schedule for {week_str} is out!"
-    schedule_url = request.build_absolute_uri(reverse("weekly_schedule"))
+    week_param = week_start.strftime("%Y-%m-%d")
+    schedule_url = request.build_absolute_uri(f"{reverse('weekly_schedule')}?week={week_param}")
 
     html_body = render_to_string(
         "scheduling/emails/schedule_published.html",
