@@ -8,6 +8,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from .emails import send_schedule_published
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import status, viewsets
@@ -491,6 +492,7 @@ class ScheduleWeekViewSet(viewsets.ModelViewSet):
             schedule_week.publish_department(department, request.user, shift_snapshot=snapshot)
         else:
             schedule_week.publish(request.user, shift_snapshot=snapshot)
+        send_schedule_published(schedule_week, department, request)
         serializer = self.get_serializer(schedule_week)
         return Response(serializer.data)
 

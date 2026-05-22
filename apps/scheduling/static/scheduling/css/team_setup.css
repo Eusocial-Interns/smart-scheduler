@@ -655,11 +655,70 @@
 
 @media (max-width: 700px) {
     .team-hero,
-    .setup-panel__header,
-    .employee-card__header,
-    .employee-role-editor,
+    .setup-panel__header {
+        flex-direction: column;
+    }
+
+    .employee-role-editor {
+        grid-template-columns: 1fr;
+    }
+
     .availability-row {
         grid-template-columns: 1fr;
+    }
+
+    .worker-role-group__body {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-card {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .employee-card__header {
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+
+    .employee-card__info {
+        min-width: 0;
+        flex: 1 1 0;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
+    .employee-card__header-right {
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.4rem;
+        width: 100%;
+    }
+
+    .employee-card__role-chips {
+        justify-content: flex-start;
+    }
+
+    .employee-role-row {
         flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .employee-role-row__label {
+        width: auto;
+        padding-top: 0;
+    }
+
+    .employee-card h3 {
+        font-size: 1rem;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
+    .employee-card small {
+        overflow-wrap: break-word;
+        word-break: break-word;
     }
 }
