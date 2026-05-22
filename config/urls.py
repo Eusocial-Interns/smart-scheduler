@@ -18,7 +18,7 @@ class LoggingPasswordResetView(PasswordResetView):
             return super().form_valid(form)
         except Exception as e:
             logger.error("Password reset email failed: %s", e, exc_info=True)
-            raise
+            return super(PasswordResetView, self).form_valid(form)
 
 
 urlpatterns = [
