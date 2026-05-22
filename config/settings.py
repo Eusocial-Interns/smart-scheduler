@@ -100,10 +100,11 @@ LOGOUT_REDIRECT_URL = "login"
 # Email via Resend SMTP
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.resend.com'
-EMAIL_PORT = 465
-EMAIL_USE_SSL = True
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 EMAIL_HOST_USER = 'resend'
 EMAIL_HOST_PASSWORD = os.getenv('RESEND_API_KEY', '')
-EMAIL_TIMEOUT = 10
+EMAIL_TIMEOUT = 30
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@example.com')
 PASSWORD_RESET_TIMEOUT = 86400  # 24 hours
