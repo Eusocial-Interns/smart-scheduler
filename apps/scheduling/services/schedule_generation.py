@@ -209,8 +209,7 @@ def fill_shift_assignments(shift, requirement, shift_date, shift_start, shift_en
     stype = shift_type_for(requirement)
 
     base_qs = (
-        Employee.objects.filter(account_type=Employee.ACCOUNT_TYPE_EMPLOYEE)
-        .exclude(assignments__shift=shift)
+        Employee.objects.exclude(assignments__shift=shift)
         .distinct()
     )
     # Primary-role workers are scheduled first; secondary-role workers only

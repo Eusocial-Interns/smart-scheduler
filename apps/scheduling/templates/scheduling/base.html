@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Smart Scheduler{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'scheduling/css/base.css' %}?v=20260519c">
-    <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}?v=20260521a">
+    <link rel="stylesheet" href="{% static 'scheduling/css/base.css' %}?v=20260525d">
+    <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}?v=20260525b">
     {% block page_css %}{% endblock %}
 </head>
 <body data-route="{{ request.resolver_match.url_name|default:'page' }}">
@@ -50,6 +50,7 @@
         });
     })();
     </script>
+    <div class="status-banner" id="app-toast"></div>
     {% block page_js %}{% endblock %}
 </body>
 </html>

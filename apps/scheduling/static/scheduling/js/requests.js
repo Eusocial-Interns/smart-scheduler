@@ -19,7 +19,7 @@ function getCsrf() {
 }
 
 function flash(msg, ok = true) {
-  const el = document.getElementById("requests-status");
+  const el = document.getElementById("app-toast");
   if (!el) return;
   el.textContent = msg;
   el.style.background = ok ? "" : "#b4321e";
@@ -150,6 +150,12 @@ function shiftLabel(s) {
   return `${s.date_label} · ${role}${type} · ${s.start_display} – ${s.end_display}`;
 }
 
+function tradeTargetLabel(s) {
+  const employeeName = s.assignments?.[0]?.employee_name || "Open";
+  const role = s.role_name || s.title || "Shift";
+  return `${employeeName} · ${s.date_label} · ${role} · ${s.start_display}`;
+}
+
 async function loadGiveawayTargets(shiftId) {
   const select = document.getElementById("giveaway-target-employee");
   if (!select) return;
@@ -165,38 +171,52 @@ async function loadGiveawayTargets(shiftId) {
   });
 }
 
-async function loadTradeTargets(myShiftId) {
+async function loadTradeTargets(myShiftId, roleFilter = null) {
   const url = myShiftId
     ? `/api/v1/shifts/?for_trade=true&my_shift=${myShiftId}&limit=200`
     : `/api/v1/shifts/?for_trade=true&limit=200`;
   const resp = await api(url).catch(() => ({ results: [] }));
   allPublishedShifts = resp.results ?? resp;
-  populateSelect("swap-target-shift", allPublishedShifts, s => s.id, shiftLabel);
+
+  // Build the set of dates the user is already scheduled on,
+  // excluding the shift being traded away (they'll be free that day after the trade).
+  const blockedDates = new Set(
+    myShifts
+      .filter(s => String(s.id) !== String(myShiftId))
+      .map(s => s.start_time?.slice(0, 10))
+      .filter(Boolean)
+  );
+
+  let available = allPublishedShifts.filter(
+    s => !blockedDates.has(s.start_time?.slice(0, 10))
+  );
+
+  if (roleFilter != null) {
+    available = available.filter(s => String(s.role) === String(roleFilter));
+  }
+
+  populateSelect("swap-target-shift", available, s => s.id, tradeTargetLabel);
 }
 
-async function loadShiftsForForms() {
-  // My published shifts (for swap/giveaway)
-  const resp = await api("/api/v1/assignments/?limit=200").catch(() => ({ results: [] }));
-  const assignments = resp.results ?? resp;
-  myShifts = await Promise.all(
-    assignments
-      .filter(a => a.shift)
-      .map(a => api(`/api/v1/shifts/${a.shift}/`).catch(() => null))
-  ).then(arr => arr.filter(Boolean));
-
-  // Open shifts (for pickup)
-  const openResp = await api("/api/v1/shifts/?is_open=true").catch(() => ({ results: [] }));
+async function loadShiftsForForms(roleFilter = null) {
+  // My published shifts (for swap/giveaway) — shift data is embedded in shift_detail
+  const [assignResp, openResp] = await Promise.all([
+    api("/api/v1/assignments/?limit=200").catch(() => ({ results: [] })),
+    api("/api/v1/shifts/?is_open=true").catch(() => ({ results: [] })),
+  ]);
+  const assignments = assignResp.results ?? assignResp;
+  myShifts = assignments.filter(a => a.shift_detail).map(a => a.shift_detail);
   openShifts = openResp.results ?? openResp;
 
   populateSelect("swap-my-shift", myShifts, s => s.id, shiftLabel);
   populateSelect("giveaway-shift", myShifts, s => s.id, shiftLabel);
   populateSelect("pickup-shift", openShifts, s => s.id, shiftLabel);
 
-  await loadTradeTargets(myShifts[0]?.id ?? null);
+  await loadTradeTargets(myShifts[0]?.id ?? null, roleFilter);
   await loadGiveawayTargets(myShifts[0]?.id ?? null);
 
   document.getElementById("swap-my-shift")?.addEventListener("change", e => {
-    loadTradeTargets(e.target.value || null);
+    loadTradeTargets(e.target.value || null, roleFilter);
   });
 
   document.getElementById("giveaway-shift")?.addEventListener("change", e => {
@@ -393,6 +413,83 @@ async function loadMyRequests() {
   }
 }
 
+// ─── MANAGER: APPROVE TIME OFF FOR EMPLOYEE ───────────────────────────────────
+
+async function loadEmployeesForManager() {
+  const resp = await api("/api/v1/employees/?limit=200").catch(() => []);
+  const employees = resp.results ?? resp;
+  const sel = document.getElementById("mgr-timeoff-employee");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Select employee</option>';
+  employees.forEach(emp => {
+    const o = document.createElement("option");
+    o.value = emp.id;
+    o.textContent = emp.name;
+    sel.appendChild(o);
+  });
+}
+
+document.getElementById("manager-timeoff-form")?.addEventListener("submit", async e => {
+  e.preventDefault();
+  const employee = document.getElementById("mgr-timeoff-employee").value;
+  const start_date = document.getElementById("mgr-timeoff-start").value;
+  const end_date = document.getElementById("mgr-timeoff-end").value;
+  const reason = document.getElementById("mgr-timeoff-reason").value.trim();
+  if (!employee) { flash("Select an employee.", false); return; }
+  try {
+    await api("/api/v1/time-off-requests/", {
+      method: "POST",
+      body: JSON.stringify({ employee, start_date, end_date, reason }),
+    });
+    flash("Time off approved.");
+    e.target.reset();
+    loadUpcomingTimeOff();
+  } catch (err) {
+    flash(err.message, false);
+  }
+});
+
+async function loadUpcomingTimeOff() {
+  const today = new Date().toISOString().split("T")[0];
+  const resp = await api("/api/v1/time-off-requests/?status=approved&limit=200").catch(() => []);
+  const all = resp.results ?? resp;
+  const upcoming = all
+    .filter(r => r.end_date >= today)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date));
+
+  const el = document.getElementById("upcoming-timeoff-list");
+  const panel = document.getElementById("upcoming-timeoff-panel");
+  if (!el || !panel) return;
+
+  panel.hidden = false;
+  if (!upcoming.length) {
+    el.innerHTML = '<div class="empty-state">No upcoming approved time off.</div>';
+    return;
+  }
+
+  el.innerHTML = upcoming.map(r => `
+    <div class="req-card">
+      <span class="req-card__type">Time Off — ${r.employee_name ?? ""}</span>
+      <span class="req-card__title">${fmtDate(r.start_date)} → ${fmtDate(r.end_date)}</span>
+      ${r.reason ? `<span class="req-card__sub">${r.reason}</span>` : ""}
+      <div class="req-card__status">
+        <button class="btn-deny" data-id="${r.id}">Remove</button>
+      </div>
+    </div>`).join("");
+
+  el.querySelectorAll(".btn-deny").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      try {
+        await api(`/api/v1/time-off-requests/${btn.dataset.id}/`, { method: "DELETE" });
+        flash("Time off removed.");
+        loadUpcomingTimeOff();
+      } catch (err) {
+        flash(err.message, false);
+      }
+    });
+  });
+}
+
 // ─── MANAGER QUEUE ────────────────────────────────────────────────────────────
 
 function fmtSwapDate(iso) {
@@ -517,10 +614,24 @@ async function init() {
   const managerSection = document.getElementById("manager-workspace");
   if (managerSection) managerSection.hidden = !isManager;
 
+  const mgrTimeoffPanel = document.getElementById("manager-timeoff-panel");
+  if (mgrTimeoffPanel) mgrTimeoffPanel.hidden = !isManager;
+
+  const myRequestsPanel = document.getElementById("my-requests-panel");
+  if (myRequestsPanel) myRequestsPanel.hidden = isManager;
+
+  const shiftSwapsPanel = document.getElementById("shift-swaps-panel");
+  if (shiftSwapsPanel) shiftSwapsPanel.hidden = isManager;
+
+  const incomingSwapsSection = document.getElementById("incoming-swaps-section");
+  if (incomingSwapsSection && isManager) incomingSwapsSection.hidden = true;
+
   await Promise.all([
     loadMyRequests(),
-    loadShiftsForForms(),
+    isManager ? Promise.resolve() : loadShiftsForForms(),
     isManager ? loadManagerQueue() : Promise.resolve(),
+    isManager ? loadUpcomingTimeOff() : Promise.resolve(),
+    isManager ? loadEmployeesForManager() : Promise.resolve(),
   ]);
 }
 

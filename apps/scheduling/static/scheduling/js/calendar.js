@@ -2,6 +2,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 let currentRole = null;
 let activeShift = null;
+let myRoleNames = null; // Set of role names the current user can cover (primary + secondary)
 
 async function api(url, options = {}) {
   const defaults = {
@@ -22,7 +23,7 @@ function getCsrf() {
 }
 
 function flash(msg, ok = true) {
-  const el = document.getElementById("dash-status");
+  const el = document.getElementById("app-toast");
   if (!el) return;
   el.textContent = msg;
   el.style.background = ok ? "" : "#b4321e";
@@ -342,14 +343,19 @@ function renderManagerDashboard(data) {
   document.getElementById("manager-view").hidden = false;
 
   // Manager's own upcoming shifts
-  const upcomingSection = document.getElementById("manager-upcoming-section");
   const upcomingList = document.getElementById("manager-upcoming-list");
-  if (upcomingSection && upcomingList) {
+  if (upcomingList) {
     if (data.upcoming_shifts?.length) {
-      upcomingSection.hidden = false;
       upcomingList.innerHTML = data.upcoming_shifts.map(s => renderShiftCard(s, { isMine: true })).join("");
+      upcomingList.querySelectorAll(".shift-card--mine").forEach(card => {
+        const shiftId = card.dataset.shiftId;
+        const shift = data.upcoming_shifts.find(s => String(s.shift_id) === String(shiftId));
+        if (!shift) return;
+        card.addEventListener("click", () => openShiftSheet(shift));
+        card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") openShiftSheet(shift); });
+      });
     } else {
-      upcomingSection.hidden = true;
+      upcomingList.innerHTML = '<div class="empty-state">No shifts scheduled in the next 7 days.</div>';
     }
   }
 
@@ -437,8 +443,80 @@ function renderManagerDashboard(data) {
     }
   }
 
+  // Today's workers
+  renderTodayWorkers(data.today_workers ?? {});
+
   // Announcements
   renderAnnouncementsSection(data.announcements ?? [], document.getElementById("announcements-manager-list"));
+}
+
+function renderTodayWorkers(workers) {
+  const body = document.getElementById("today-workers-body");
+  const mgmt = workers.management ?? [];
+  const foh  = workers.foh ?? [];
+  const boh  = workers.boh ?? [];
+
+  if (!mgmt.length && !foh.length && !boh.length) {
+    body.innerHTML = '<div class="empty-state">No scheduled workers today.</div>';
+    return;
+  }
+
+  const renderWorkerCard = (w, role) => {
+    const initials = w.name.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase();
+    return `
+      <div class="worker-card" data-assignment-id="${w.assignment_id}">
+        <div class="worker-card__avatar">${initials}</div>
+        <div class="worker-card__info">
+          <span class="worker-card__name">${w.name}</span>
+          <span class="worker-card__role-chip">${role}</span>
+        </div>
+        <div class="worker-card__right">
+          <span class="worker-card__time">${w.start_time} – ${w.end_time}</span>
+          <button class="worker-card__night-off btn-night-off" data-id="${w.assignment_id}">Give night off</button>
+        </div>
+      </div>`;
+  };
+
+  const renderDept = (label, roleGroups, deptClass) => {
+    if (!roleGroups.length) return "";
+    const rolesHtml = roleGroups.map(rg => `
+      <div class="today-role-group">
+        <div class="today-role-group__label">${rg.role}</div>
+        <div class="today-role-group__cards">
+          ${rg.workers.map(w => renderWorkerCard(w, rg.role)).join("")}
+        </div>
+      </div>`).join("");
+    return `
+      <div class="today-dept-section">
+        <div class="today-dept-section__header today-dept-section__header--${deptClass}">${label}</div>
+        <div class="today-dept-section__body">${rolesHtml}</div>
+      </div>`;
+  };
+
+  body.innerHTML = renderDept("Management", mgmt, "mgmt")
+    + renderDept("Front of House", foh, "foh")
+    + renderDept("Back of House", boh, "boh");
+
+  body.querySelectorAll(".btn-night-off").forEach(btn => {
+    btn.addEventListener("click", () => giveNightOff(btn.dataset.id, btn));
+  });
+}
+
+async function giveNightOff(assignmentId, btn) {
+  if (!confirm("Remove this worker from tonight's shift?")) return;
+  btn.disabled = true;
+  btn.textContent = "Removing…";
+  try {
+    await api(`/api/v1/assignments/${assignmentId}/`, { method: "DELETE" });
+    const card = btn.closest(".worker-card");
+    card.style.opacity = "0.4";
+    card.style.pointerEvents = "none";
+    btn.textContent = "Removed";
+  } catch {
+    btn.disabled = false;
+    btn.textContent = "Give night off";
+    flash("Failed to remove worker.");
+  }
 }
 
 const kindToEndpoint = {
@@ -484,7 +562,11 @@ function openShiftSheet(shift) {
   const select = document.getElementById("sheet-trade-target");
   select.innerHTML = '<option value="">Loading teammates\' shifts…</option>';
   api(`/api/v1/shifts/?for_trade=true&my_shift=${shift.shift_id}&limit=100`).then(resp => {
-    const shifts = resp.results ?? resp;
+    const allShifts = resp.results ?? resp;
+    // Filter to shifts the current user is qualified to cover (primary + secondary roles)
+    const shifts = myRoleNames?.size
+      ? allShifts.filter(s => myRoleNames.has(s.role_name))
+      : allShifts;
     select.innerHTML = '<option value="">Select a shift to trade for</option>';
     shifts.forEach(s => {
       const emp = s.assignments?.[0]?.employee_name ?? "Teammate";
@@ -612,8 +694,14 @@ function initAnnouncementForm() {
 
 async function loadDashboard() {
   try {
-    const data = await api("/api/v1/dashboard/");
+    const [data, me] = await Promise.all([
+      api("/api/v1/dashboard/"),
+      api("/api/v1/employees/me/").catch(() => null),
+    ]);
     currentRole = data.role;
+    if (me?.role_names?.length) {
+      myRoleNames = new Set(me.role_names);
+    }
     if (data.role === "manager") {
       renderManagerDashboard(data);
     } else {

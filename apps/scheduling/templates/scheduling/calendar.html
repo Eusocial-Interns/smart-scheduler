@@ -97,7 +97,19 @@
   <!-- MANAGER VIEW -->
   <div id="manager-view" hidden>
 
-    <section class="dash-section page-card" id="manager-upcoming-section" hidden>
+    <section class="dash-section page-card" id="today-workers-section">
+      <div class="dash-section__header">
+        <div>
+          <p class="section-eyebrow">On the Floor Today</p>
+          <h2 class="dash-section__title">Today's workers</h2>
+        </div>
+      </div>
+      <div id="today-workers-body">
+        <div class="empty-state">Loading…</div>
+      </div>
+    </section>
+
+    <section class="dash-section page-card" id="manager-upcoming-section">
       <div class="dash-section__header">
         <div>
           <p class="section-eyebrow">Your Schedule</p>
@@ -105,7 +117,9 @@
         </div>
         <a class="button-ghost button-ghost--small" href="{% url 'weekly_schedule' %}">Full schedule</a>
       </div>
-      <div id="manager-upcoming-list" class="shift-list"></div>
+      <div id="manager-upcoming-list" class="shift-list">
+        <div class="empty-state">Loading your shifts…</div>
+      </div>
     </section>
 
     <section class="dash-section page-card">
@@ -186,7 +200,6 @@
 
 </div>
 
-<div class="status-banner" id="dash-status"></div>
 
 <!-- SHIFT ACTION SHEET -->
 <div class="shift-sheet-overlay" id="shift-sheet-overlay" hidden>
@@ -225,5 +238,5 @@
 {% endblock %}
 
 {% block page_js %}
-<script src="{% static 'scheduling/js/calendar.js' %}?v=20260521a"></script>
+<script src="{% static 'scheduling/js/calendar.js' %}?v=20260525i"></script>
 {% endblock %}

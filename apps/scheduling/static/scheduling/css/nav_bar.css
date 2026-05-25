@@ -152,7 +152,6 @@
         font-size: 0.95rem;
     }
 
-
     .nav-toggle {
         display: none;
     }
@@ -165,6 +164,9 @@
         display: flex;
         justify-content: space-around;
         align-items: center;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(255, 252, 247, 0.98);
     }
 }
 

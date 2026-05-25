@@ -90,7 +90,7 @@
     </section>
 
     <!-- SHIFT SWAPS -->
-    <section class="req-panel page-card">
+    <section class="req-panel page-card" id="shift-swaps-panel">
       <div class="req-panel__header">
         <div>
           <p class="section-eyebrow">Shift Swaps</p>
@@ -176,6 +176,50 @@
 
   </div>
 
+  <!-- MANAGER: approve time off for an employee -->
+  <section class="req-panel page-card" id="manager-timeoff-panel" hidden>
+    <div class="req-panel__header">
+      <div>
+        <p class="section-eyebrow">Manager Action</p>
+        <h2 class="req-panel__title">Approve time off for an employee</h2>
+      </div>
+    </div>
+    <form id="manager-timeoff-form" class="form-row form-row--wrap">
+      <div class="field">
+        <label for="mgr-timeoff-employee">Employee</label>
+        <select id="mgr-timeoff-employee" required>
+          <option value="">Select employee</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="mgr-timeoff-start">From</label>
+        <input id="mgr-timeoff-start" type="date" required>
+      </div>
+      <div class="field">
+        <label for="mgr-timeoff-end">To</label>
+        <input id="mgr-timeoff-end" type="date" required>
+      </div>
+      <div class="field field--full">
+        <label for="mgr-timeoff-reason">Reason <span class="field-optional">(optional)</span></label>
+        <textarea id="mgr-timeoff-reason" rows="2" placeholder="Vacation, medical leave…"></textarea>
+      </div>
+      <div class="field field--full">
+        <button class="button-primary" type="submit">Approve Time Off</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- MANAGER: upcoming approved time off -->
+  <section class="req-panel page-card" id="upcoming-timeoff-panel" hidden>
+    <div class="req-panel__header">
+      <div>
+        <p class="section-eyebrow">Upcoming</p>
+        <h2 class="req-panel__title">Approved time off</h2>
+      </div>
+    </div>
+    <div class="req-list" id="upcoming-timeoff-list"></div>
+  </section>
+
   <!-- MANAGER QUEUE -->
   <section class="req-panel page-card" id="manager-workspace" hidden>
     <div class="req-panel__header">
@@ -188,8 +232,8 @@
     <div class="req-list" id="manager-request-list"></div>
   </section>
 
-  <!-- MY REQUEST HISTORY -->
-  <section class="req-panel page-card">
+  <!-- MY REQUEST HISTORY (employees only) -->
+  <section class="req-panel page-card" id="my-requests-panel">
     <div class="req-panel__header">
       <div>
         <p class="section-eyebrow">My Requests</p>
@@ -201,9 +245,8 @@
 
 </section>
 
-<div class="status-banner" id="requests-status"></div>
 {% endblock %}
 
 {% block page_js %}
-<script src="{% static 'scheduling/js/requests.js' %}?v=20260521a"></script>
+<script src="{% static 'scheduling/js/requests.js' %}?v=20260525f"></script>
 {% endblock %}

@@ -4,6 +4,177 @@
   gap: 1.25rem;
 }
 
+/* TODAY'S WORKERS */
+.today-dept-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.today-dept-section:last-child {
+  margin-bottom: 0;
+}
+
+.today-dept-section__header {
+  padding: 0.55rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.today-dept-section__header--mgmt {
+  background: var(--dept-mgmt-bg);
+  color: var(--dept-mgmt-text);
+  border-bottom: 1px solid var(--dept-mgmt-border);
+}
+
+.today-dept-section__header--foh {
+  background: var(--dept-foh-bg);
+  color: var(--dept-foh-text);
+  border-bottom: 1px solid var(--dept-foh-border);
+}
+
+.today-dept-section__header--boh {
+  background: var(--dept-boh-bg);
+  color: var(--dept-boh-text);
+  border-bottom: 1px solid var(--dept-boh-border);
+}
+
+.today-dept-section__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.today-role-group {
+  border-bottom: 1px solid rgba(75, 58, 44, 0.07);
+}
+
+.today-role-group:last-child {
+  border-bottom: none;
+}
+
+.today-role-group__label {
+  padding: 0.45rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid rgba(75, 58, 44, 0.05);
+}
+
+.today-role-group__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.worker-card {
+  display: grid;
+  grid-template-columns: 2.8rem 1fr auto;
+  gap: 0.2rem 0.85rem;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(75, 58, 44, 0.06);
+  transition: background 120ms;
+}
+
+.worker-card:last-child {
+  border-bottom: none;
+}
+
+.worker-card:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.worker-card__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  grid-row: span 2;
+  flex-shrink: 0;
+}
+
+.worker-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.worker-card__name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.worker-card__role-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(217, 123, 79, 0.12);
+  color: var(--accent-deep);
+  font-size: 0.7rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.worker-card__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  grid-row: span 2;
+  flex-shrink: 0;
+}
+
+.worker-card__time {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.worker-card__night-off {
+  font-size: 0.72rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(75, 58, 44, 0.18);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  transition: background 120ms, color 120ms, border-color 120ms;
+  white-space: nowrap;
+}
+
+.worker-card__night-off:hover {
+  background: rgba(200, 50, 30, 0.08);
+  border-color: rgba(200, 50, 30, 0.3);
+  color: #c0392b;
+}
+
+.worker-card__night-off:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* HERO */
 .dash-hero {
   display: flex;
@@ -29,6 +200,9 @@
   justify-content: flex-end;
 }
 
+.dash-section__header a {
+  text-decoration: none;
+}
 /* SECTION GROUPS */
 #employee-view,
 #manager-view {

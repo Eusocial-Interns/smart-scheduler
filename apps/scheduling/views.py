@@ -618,6 +618,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
         queryset = Assignment.objects.select_related(
             "employee",
             "shift",
+            "shift__role",
             "shift__schedule_week",
         )
         if user_is_manager(self.request.user):
@@ -917,7 +918,11 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if user_is_manager(self.request.user):
-            translate_django_validation(lambda: serializer.save())
+            translate_django_validation(lambda: serializer.save(
+                status="approved",
+                reviewed_by=self.request.user,
+                reviewed_at=timezone.now(),
+            ))
             return
         profile = require_employee_profile(self.request)
         translate_django_validation(lambda: serializer.save(employee=profile))
@@ -1073,7 +1078,8 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[IsManager])
     def approve(self, request, pk=None):
         instance = self.get_object()
-        translate_django_validation(lambda: instance.approve(request.user))
+        with transaction.atomic():
+            translate_django_validation(lambda: instance.approve(request.user))
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -1505,6 +1511,7 @@ class DashboardAPIView(APIView):
                 Announcement.objects.select_related("posted_by").order_by("-created_at")[:8]
             )
             ann_context = self._announcement_serializer_context(request, announcements)
+            today_workers = self._format_today_workers(today)
             return Response({
                 "role": "manager",
                 "upcoming_shifts": my_upcoming_shifts,
@@ -1516,6 +1523,7 @@ class DashboardAPIView(APIView):
                 "my_time_off": TimeOffRequestSerializer(my_time_off, many=True).data,
                 "my_availability": AvailabilityChangeRequestSerializer(my_availability, many=True).data,
                 "my_swaps": ShiftSwapRequestSerializer(my_swaps, many=True).data,
+                "today_workers": today_workers,
             })
 
         profile = require_employee_profile(request)
@@ -1655,6 +1663,39 @@ class DashboardAPIView(APIView):
                 "notes": shift.notes,
             })
         return result
+
+    def _format_today_workers(self, today):
+        published_q = (
+            Q(shift__schedule_week__status=ScheduleWeek.STATUS_PUBLISHED)
+            | Q(shift__schedule_week__department_statuses__foh=ScheduleWeek.STATUS_PUBLISHED)
+            | Q(shift__schedule_week__department_statuses__boh=ScheduleWeek.STATUS_PUBLISHED)
+        )
+        assignments = (
+            Assignment.objects.filter(published_q, shift__start_time__date=today)
+            .select_related("employee", "shift__role")
+            .order_by("shift__role__name", "shift__start_time", "employee__name")
+        )
+        # Build dept → role → [workers] structure
+        # Each assignment is its own entry — a manager can appear in both
+        # management and foh/boh if they hold shifts in multiple departments today.
+        groups = {"management": {}, "foh": {}, "boh": {}}
+        for a in assignments:
+            dept = a.shift.role.department if a.shift.role else None
+            if dept not in groups:
+                continue
+            role_name = a.shift.role.name if a.shift.role else "General"
+            start = timezone.localtime(a.shift.start_time)
+            end = timezone.localtime(a.shift.end_time)
+            groups[dept].setdefault(role_name, []).append({
+                "assignment_id": a.id,
+                "name": a.employee.name,
+                "start_time": start.strftime("%-I:%M %p"),
+                "end_time": end.strftime("%-I:%M %p"),
+            })
+        return {
+            dept: [{"role": role, "workers": workers} for role, workers in roles.items()]
+            for dept, roles in groups.items()
+        }
 
     def _format_shifts(self, shifts):
         result = []

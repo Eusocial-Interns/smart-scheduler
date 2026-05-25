@@ -1,5 +1,5 @@
 const teamUserPill = document.getElementById("team-user-pill");
-const teamStatus = document.getElementById("team-status");
+const teamStatus = document.getElementById("app-toast");
 const roleForm = document.getElementById("role-form");
 const employeeForm = document.getElementById("employee-form");
 const availabilityForm = document.getElementById("availability-form");

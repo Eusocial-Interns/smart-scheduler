@@ -1,6 +1,6 @@
 const weeklyGrid = document.getElementById("weekly-grid");
 const weekRange = document.getElementById("week-range");
-const weeklyStatus = document.getElementById("weekly-status");
+const weeklyStatus = document.getElementById("app-toast");
 const scheduleStatus = document.getElementById("schedule-status");
 const coverageSummary = document.getElementById("coverage-summary");
 const managerWorkflow = document.getElementById("manager-workflow");
@@ -10,6 +10,8 @@ const weeklyCopy = document.getElementById("weekly-copy");
 const generateDraftButton = document.getElementById("generate-draft");
 const copyLastWeekButton = document.getElementById("copy-last-week");
 const publishWeekButton = document.getElementById("publish-week");
+const boardHeader = document.getElementById("weekly-board-header");
+const boardFooter = document.getElementById("weekly-board-footer");
 const staffingRequirementsPanel = document.getElementById("staffing-requirements-panel");
 const staffingRequirementForm = document.getElementById("staffing-requirement-form");
 const requirementList = document.getElementById("requirement-list");
@@ -152,7 +154,7 @@ function bootstrapWeeklySchedule() {
     copyLastWeekButton.addEventListener("click", copyLastWeek);
     publishWeekButton.addEventListener("click", publishWeek);
     document.getElementById("view-snapshot-btn").addEventListener("click", () => {
-        state.viewingSnapshot = true;
+        state.viewingSnapshot = !state.viewingSnapshot;
         if (state.schedule) renderSchedule(state.schedule);
     });
     document.getElementById("back-to-draft-btn").addEventListener("click", () => {
@@ -199,6 +201,7 @@ function bootstrapWeeklySchedule() {
     loadOperatingHours();
     loadSchedule();
     loadStaffingRequirements();
+    startSchedulePolling();
 }
 
 function buildTimeSelects() {
@@ -246,6 +249,8 @@ async function loadCurrentUser() {
             generateDraftButton.hidden = false;
             copyLastWeekButton.hidden = false;
             publishWeekButton.hidden = false;
+            if (boardHeader) boardHeader.hidden = false;
+            if (boardFooter) boardFooter.hidden = false;
             managerWorkflow.hidden = false;
             staffingRequirementsPanel.hidden = false;
             employeeBenchPanel.hidden = false;
@@ -323,8 +328,10 @@ async function loadStaffingRequirements() {
     }
 }
 
-async function loadSchedule() {
-    weeklyGrid.innerHTML = '<div class="weekly-loading">Loading weekly schedule...</div>';
+async function loadSchedule({ silent = false } = {}) {
+    if (!silent) {
+        weeklyGrid.innerHTML = '<div class="weekly-loading">Loading weekly schedule...</div>';
+    }
 
     const reqEnd = new Date(state.weekStart);
     reqEnd.setDate(reqEnd.getDate() + 6);
@@ -335,23 +342,42 @@ async function loadSchedule() {
         state.schedule = schedule;
         renderSchedule(schedule);
     } catch (error) {
-        weeklyGrid.innerHTML = '<div class="weekly-loading">Unable to load weekly schedule.</div>';
+        if (!silent) {
+            weeklyGrid.innerHTML = '<div class="weekly-loading">Unable to load weekly schedule.</div>';
+        }
         setStatus(error.message || "Unable to load weekly schedule.", "error");
     }
+}
+
+function startSchedulePolling() {
+    setInterval(() => {
+        if (!document.hidden) loadSchedule({ silent: true });
+    }, 30000);
 }
 
 function renderSchedule(schedule) {
     weekRange.textContent = `${formatDate(schedule.week_start)} – ${formatDate(schedule.week_end)}`;
 
     let effectiveStatus = schedule.status;
-    if (isManager() && state.activeDepartment) {
+    if (isManager()) {
         const deptStatuses = schedule.department_statuses || {};
-        effectiveStatus = deptStatuses[state.activeDepartment] || schedule.status || "draft";
+        if (state.activeDepartment) {
+            effectiveStatus = deptStatuses[state.activeDepartment] || schedule.status || "draft";
+        } else {
+            // "All" view: published if globally published OR every dept with shifts is individually published
+            const activeDepts = [...new Set((schedule.roles || []).map(r => r.role_department).filter(Boolean))];
+            const allDeptPublished = activeDepts.length > 0 &&
+                activeDepts.every(d => deptStatuses[d] === "published");
+            effectiveStatus = (schedule.status === "published" || allDeptPublished) ? "published" : "draft";
+        }
     }
     const isPublished = effectiveStatus === "published";
     const hasPendingChanges = isPublished && schedule.has_unpublished_changes;
     if (isManager()) {
-        if (hasPendingChanges) {
+        if (state.viewingSnapshot) {
+            scheduleStatus.textContent = "Viewing Published";
+            scheduleStatus.className = "pill pill--snapshot";
+        } else if (hasPendingChanges) {
             scheduleStatus.textContent = "Changes Pending";
             scheduleStatus.className = "pill pill--pending";
         } else {
@@ -379,7 +405,7 @@ function renderSchedule(schedule) {
         // Toggle button
         if (snapshotBtn) {
             snapshotBtn.hidden = false;
-            snapshotBtn.textContent = state.viewingSnapshot ? "Back to current draft" : "View published version";
+            snapshotBtn.textContent = state.viewingSnapshot ? "Show Current Draft" : "Show Published";
         }
         // Banners
         if (state.viewingSnapshot) {
@@ -461,7 +487,28 @@ function renderSchedule(schedule) {
         return;
     }
 
+    const DEPT_ORDER = ["management", "boh", "foh"];
+    const DEPT_LABELS = { management: "Management", boh: "Back of House", foh: "Front of House" };
+    const showDividers = isManager() && !state.activeDepartment;
+
+    if (showDividers) {
+        const deptIndex = d => { const i = DEPT_ORDER.indexOf(d); return i === -1 ? 99 : i; };
+        rolesToRender = [...rolesToRender].sort(
+            (a, b) => deptIndex(a.role_department) - deptIndex(b.role_department)
+        );
+    }
+
+    let lastDept = null;
     rolesToRender.forEach((role) => {
+        if (showDividers && role.role_department !== lastDept) {
+            lastDept = role.role_department;
+            const label = DEPT_LABELS[role.role_department] || role.role_department || "Other";
+            weeklyGrid.insertAdjacentHTML(
+                "beforeend",
+                `<div class="weekly-dept-divider"><span>${escapeHtml(label)}</span></div>`
+            );
+        }
+
         weeklyGrid.insertAdjacentHTML(
             "beforeend",
             `<div class="weekly-role">${escapeHtml(role.role_name)}</div>`
@@ -655,6 +702,8 @@ function renderAssignment(assignment) {
     const systemNotes = new Set([
         "Generated from staffing requirements.",
         "Manager edited assignment.",
+        "Copied from last week.",
+        "Copied from last week",
     ]);
     const notes = systemNotes.has(assignment.notes) ? "" : assignment.notes;
     const canDrag = isManager() && !state.viewingSnapshot && assignment.assignment_id && !assignment.is_open;
@@ -846,7 +895,7 @@ async function forceAssign() {
             body: JSON.stringify({ employee: employeeId, shift: shiftId }),
         });
         state.lastGenerationSummary = null;
-        await loadSchedule();
+        await loadSchedule({ silent: true });
         setStatus("Employee added to schedule.", "success");
     } catch (error) {
         setStatus(error.message || "Unable to add employee.", "error");
@@ -918,7 +967,7 @@ async function dropAssignment(event) {
             }),
         });
         state.lastGenerationSummary = null;
-        await loadSchedule();
+        await loadSchedule({ silent: true });
         setStatus(swapAssignment ? "Assignments swapped." : "Assignment moved.", "success");
     } catch (error) {
         setStatus(error.message || "Unable to move assignment.", "error");
@@ -959,7 +1008,7 @@ async function moveAssignmentToNewShift(targetCell, assignmentId) {
             body: JSON.stringify({ target_shift: shift.id }),
         });
         state.lastGenerationSummary = null;
-        await loadSchedule();
+        await loadSchedule({ silent: true });
         setStatus("Assignment moved to new shift.", "success");
     } catch (error) {
         setStatus(error.message || "Unable to move assignment.", "error");
@@ -1023,7 +1072,7 @@ async function createShiftAndAssign() {
         if (ok) {
             closeShiftEditor();
             state.lastGenerationSummary = null;
-            await loadSchedule();
+            await loadSchedule({ silent: true });
             setStatus("Employee assigned to new shift.", "success");
         } else {
             closeShiftEditor();
@@ -1046,7 +1095,7 @@ async function deleteAssignmentById(id) {
     try {
         await fetchJson(`/api/v1/assignments/${id}/`, { method: "DELETE" });
         state.lastGenerationSummary = null;
-        await loadSchedule();
+        await loadSchedule({ silent: true });
         setStatus("Assignment removed.", "success");
     } catch (error) {
         setStatus(error.message || "Unable to remove assignment.", "error");
@@ -1074,7 +1123,7 @@ async function assignEmployeeToShift(targetCard) {
         const ok = await tryCreateAssignment(employeeId, shiftId, employeeName);
         if (ok) {
             state.lastGenerationSummary = null;
-            await loadSchedule();
+            await loadSchedule({ silent: true });
             setStatus("Employee added to shift.", "success");
         }
     } catch (error) {
@@ -1173,7 +1222,7 @@ async function assignToOpenSlot(employeeId, shiftId, employeeName) {
         const ok = await tryCreateAssignment(employeeId, shiftId, employeeName);
         if (ok) {
             state.lastGenerationSummary = null;
-            await loadSchedule();
+            await loadSchedule({ silent: true });
             setStatus("Employee assigned to open slot.", "success");
         }
     } catch (err) {
@@ -1211,7 +1260,7 @@ async function saveShiftEdit(event) {
         });
         closeShiftEditor();
         state.lastGenerationSummary = null;
-        await loadSchedule();
+        await loadSchedule({ silent: true });
         setStatus("Shift updated.", "success");
     } catch (error) {
         setStatus(error.message || "Unable to update shift.", "error");
@@ -1409,7 +1458,7 @@ async function generateDraft() {
             body: JSON.stringify(body),
         });
         state.lastGenerationSummary = result.summary;
-        await loadSchedule();
+        await loadSchedule({ silent: true });
         const openSlots = result.summary.open_slots.length;
         const invalidRequirements = (result.summary.invalid_requirements || []).length;
         const issueCount = openSlots + invalidRequirements;
@@ -1436,7 +1485,7 @@ async function publishWeek() {
             body: JSON.stringify(body),
         });
         state.lastGenerationSummary = null;
-        await loadSchedule();
+        await loadSchedule({ silent: true });
         const deptLabel = state.activeDepartment
             ? { foh: "Front of House", boh: "Back of House", management: "Management" }[state.activeDepartment]
             : null;
@@ -1461,7 +1510,7 @@ async function copyLastWeek() {
             body: JSON.stringify({ week_start: dateKey(state.weekStart) }),
         });
         state.lastGenerationSummary = null;
-        await loadSchedule();
+        await loadSchedule({ silent: true });
         const s = result.summary;
         const parts = [`${s.assignments_copied} assignment${s.assignments_copied === 1 ? "" : "s"} copied`];
         if (s.skipped_time_off) parts.push(`${s.skipped_time_off} skipped (time off)`);

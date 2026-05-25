@@ -126,9 +126,32 @@ class TimeOffRequestSerializer(serializers.ModelSerializer):
         read_only_fields = ["reviewed_by", "reviewed_at"]
 
 
+class ShiftInlineSerializer(serializers.ModelSerializer):
+    """Lightweight shift representation embedded inside assignments — avoids circular nesting."""
+    role_name = serializers.CharField(source="role.name", read_only=True)
+    date_label = serializers.SerializerMethodField()
+    start_display = serializers.SerializerMethodField()
+    end_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Shift
+        fields = ["id", "title", "role", "role_name", "start_time", "end_time", "is_open",
+                  "date_label", "start_display", "end_display"]
+
+    def get_date_label(self, obj):
+        return tz.localtime(obj.start_time).strftime("%a, %b %-d")
+
+    def get_start_display(self, obj):
+        return tz.localtime(obj.start_time).strftime("%-I:%M %p")
+
+    def get_end_display(self, obj):
+        return tz.localtime(obj.end_time).strftime("%-I:%M %p")
+
+
 class AssignmentSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source="employee.name", read_only=True)
     shift_title = serializers.CharField(source="shift.title", read_only=True)
+    shift_detail = ShiftInlineSerializer(source="shift", read_only=True)
 
     class Meta:
         model = Assignment

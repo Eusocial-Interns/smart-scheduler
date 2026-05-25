@@ -24,7 +24,7 @@
                 <a href="{% url 'password_change' %}" class="button-ghost">Change Password</a>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
-                    <button class="button-ghost" type="submit">Log Out</button>
+                    <button class="button" type="submit">Log Out</button>
                 </form>
             </div>
         </div>

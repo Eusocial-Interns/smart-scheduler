@@ -4,33 +4,15 @@
 {% block title %}Weekly Schedule{% endblock %}
 
 {% block page_css %}
-<link rel="stylesheet" href="{% static 'scheduling/css/weekly_schedule.css' %}?v=20260519h">
+<link rel="stylesheet" href="{% static 'scheduling/css/weekly_schedule.css' %}?v=20260525k">
 {% endblock %}
 
 {% block content %}
 <section class="weekly-page">
     <div class="weekly-hero page-card">
-        <div>
-            <p class="section-eyebrow" id="weekly-eyebrow">Schedule</p>
-            <h1 class="section-title" id="weekly-title">Your Week</h1>
-            <p id="weekly-copy"></p>
-        </div>
-        <div class="weekly-hero__actions">
-            <div class="week-nav">
-                <button class="week-nav__arrow" id="previous-week" type="button" aria-label="Previous week">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                </button>
-                <button class="week-nav__today" id="current-week" type="button">This week</button>
-                <button class="week-nav__arrow" id="next-week" type="button" aria-label="Next week">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
-            </div>
-            <div class="weekly-hero__ctrl">
-                <button class="button-primary" id="generate-draft" type="button" hidden>Generate Draft</button>
-                <button class="button-ghost" id="copy-last-week" type="button" hidden>Copy Last Week</button>
-                <button class="button-secondary" id="publish-week" type="button" hidden>Publish</button>
-            </div>
-        </div>
+        <p class="section-eyebrow" id="weekly-eyebrow">Schedule</p>
+        <h1 class="section-title" id="weekly-title">Your Week</h1>
+        <p id="weekly-copy"></p>
     </div>
 
     <section class="workflow-strip page-card" id="manager-workflow" hidden>
@@ -51,23 +33,22 @@
         </div>
     </section>
 
-    <div class="weekly-toolbar page-card">
-        <div class="weekly-toolbar__heading">
-            <p class="section-eyebrow">Viewing Week</p>
-            <h2 class ='week-range'id="week-range">Loading schedule...</h2>
+    <div class="weekly-nav-card page-card">
+        <div class="week-nav">
+            <button class="week-nav__arrow" id="previous-week" type="button" aria-label="Previous week">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="week-nav__today" id="current-week" type="button">This week</button>
+            <button class="week-nav__arrow" id="next-week" type="button" aria-label="Next week">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
         </div>
+        <h2 class="week-range" id="week-range">Loading schedule...</h2>
         <div class="dept-tabs" id="dept-tabs" hidden>
             <button class="dept-tab is-active" type="button" data-dept="">All</button>
             <button class="dept-tab dept-tab--foh" type="button" data-dept="foh">Front of House</button>
             <button class="dept-tab dept-tab--boh" type="button" data-dept="boh">Back of House</button>
             <button class="dept-tab dept-tab--management" type="button" data-dept="management">Management</button>
-        </div>
-        <div class="weekly-toolbar__meta">
-            <span class="pill" id="schedule-status" hidden></span>
-            <button class="button-ghost" id="view-snapshot-btn" type="button" hidden>View Published Version</button>
-            <div class="weekly-toolbar__summary" id="coverage-summary" hidden>
-                Generate a draft to see coverage gaps.
-            </div>
         </div>
     </div>
 
@@ -144,8 +125,26 @@
     </section>
 
     <section class="weekly-board page-card">
-        <div class="weekly-grid" id="weekly-grid">
-            <div class="weekly-loading">Loading weekly schedule...</div>
+        <div class="weekly-board__header" id="weekly-board-header" hidden>
+            <div class="weekly-board__draft-ctrl">
+                <button class="button-primary" id="generate-draft" type="button" hidden>Generate Draft</button>
+                <button class="button-ghost" id="copy-last-week" type="button" hidden>Copy Last Week</button>
+                <button class="button-ghost" id="view-snapshot-btn" type="button" hidden>Show Published</button>
+            </div>
+            <div class="weekly-board__right">
+                <div class="weekly-board__coverage" id="coverage-summary" hidden>
+                    Generate a draft to see coverage gaps.
+                </div>
+                <span class="pill" id="schedule-status" hidden></span>
+            </div>
+        </div>
+        <div class="weekly-board__scroll">
+            <div class="weekly-grid" id="weekly-grid">
+                <div class="weekly-loading">Loading weekly schedule...</div>
+            </div>
+        </div>
+        <div class="weekly-board__footer" id="weekly-board-footer" hidden>
+            <button class="button-secondary" id="publish-week" type="button" hidden>Publish</button>
         </div>
     </section>
 
@@ -254,10 +253,9 @@
         </div>
     </div>
 
-    <div class="status-banner" id="weekly-status"></div>
 </section>
 {% endblock %}
 
 {% block page_js %}
-<script src="{% static 'scheduling/js/weekly_schedule.js' %}?v=20260522b"></script>
+<script src="{% static 'scheduling/js/weekly_schedule.js' %}?v=20260525f"></script>
 {% endblock %}

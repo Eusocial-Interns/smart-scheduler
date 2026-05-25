@@ -715,23 +715,61 @@ class ShiftSwapRequest(models.Model):
                     Shift.objects.filter(pk=self.shift_id).update(is_open=True)
                     self.applied_at = timezone.now()
                     type(self).objects.filter(pk=self.pk).update(applied_at=self.applied_at)
-                return
+                    return
+                raise ValidationError(
+                    "No one has accepted this swap yet — cannot apply it."
+                )
+
             assignment = Assignment.objects.filter(
                 employee=self.requester, shift=self.shift
             ).first()
             if not assignment:
-                return
-            assignment.employee = coverer
-            assignment.save()
+                raise ValidationError(
+                    f"{self.requester.name} is no longer assigned to that shift. "
+                    "The schedule may have changed since this request was made."
+                )
+
             if self.request_type == self.TYPE_SWAP and self.target_shift:
                 target_assignment = Assignment.objects.filter(
                     employee=coverer, shift=self.target_shift
                 ).first()
-                if target_assignment:
-                    target_assignment.employee = self.requester
-                    target_assignment.save()
+                if not target_assignment:
+                    raise ValidationError(
+                        f"{coverer.name} is no longer assigned to that shift. "
+                        "The schedule may have changed since this request was made."
+                    )
+
+                # Guard against double-booking when the two shifts are on different days.
+                requester_new_date = timezone.localtime(self.target_shift.start_time).date()
+                coverer_new_date = timezone.localtime(self.shift.start_time).date()
+
+                if requester_new_date != coverer_new_date:
+                    if Assignment.objects.filter(
+                        employee=self.requester,
+                        shift__start_time__date=requester_new_date,
+                    ).exclude(shift=self.shift).exists():
+                        raise ValidationError(
+                            f"{self.requester.name} is already scheduled on "
+                            f"{requester_new_date.strftime('%b %-d')} — trade would create a double-booking."
+                        )
+                    if Assignment.objects.filter(
+                        employee=coverer,
+                        shift__start_time__date=coverer_new_date,
+                    ).exclude(shift=self.target_shift).exists():
+                        raise ValidationError(
+                            f"{coverer.name} is already scheduled on "
+                            f"{coverer_new_date.strftime('%b %-d')} — trade would create a double-booking."
+                        )
+
+                target_assignment.employee = self.requester
+                target_assignment.save()
+
+            assignment.employee = coverer
+            assignment.save()
 
         elif self.request_type == self.TYPE_PICKUP:
+            if not self.shift.is_open:
+                raise ValidationError("This shift is no longer open.")
             if not Assignment.objects.filter(employee=self.requester, shift=self.shift).exists():
                 Assignment.objects.create(employee=self.requester, shift=self.shift)
             self.shift.is_open = False
