@@ -1,7 +1,9 @@
 const weeklyGrid = document.getElementById("weekly-grid");
 const weekRange = document.getElementById("week-range");
-const weeklyStatus = document.getElementById("weekly-status");
+const weeklyStatus = document.getElementById("app-toast");
 const scheduleStatus = document.getElementById("schedule-status");
+const boardHeader = document.getElementById("weekly-board-header");
+const boardFooter = document.getElementById("weekly-board-footer");
 const coverageSummary = document.getElementById("coverage-summary");
 const managerWorkflow = document.getElementById("manager-workflow");
 const weeklyEyebrow = document.getElementById("weekly-eyebrow");
@@ -243,6 +245,8 @@ async function loadCurrentUser() {
             weeklyEyebrow.textContent = "Manager Schedule";
             weeklyTitle.textContent = "Build and publish the week";
             weeklyCopy.textContent = "Set the arrivals you need, generate a fresh draft from approved availability, fix any gaps, then publish once.";
+            boardHeader.hidden = false;
+            boardFooter.hidden = false;
             generateDraftButton.hidden = false;
             copyLastWeekButton.hidden = false;
             publishWeekButton.hidden = false;
@@ -655,6 +659,7 @@ function renderAssignment(assignment) {
     const systemNotes = new Set([
         "Generated from staffing requirements.",
         "Manager edited assignment.",
+        "Copied from last week.",
     ]);
     const notes = systemNotes.has(assignment.notes) ? "" : assignment.notes;
     const canDrag = isManager() && !state.viewingSnapshot && assignment.assignment_id && !assignment.is_open;
@@ -1473,6 +1478,7 @@ async function copyLastWeek() {
         copyLastWeekButton.disabled = false;
     }
 }
+
 
 async function loadClosedDays() {
     const weekEnd = new Date(state.weekStart);
