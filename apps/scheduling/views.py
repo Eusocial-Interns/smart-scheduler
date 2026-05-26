@@ -8,7 +8,13 @@ from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from .emails import send_schedule_published
+from .emails import (
+    send_schedule_published,
+    send_trade_proposed,
+    send_trade_accepted_notify_managers,
+    send_request_submitted_to_managers,
+    send_request_approved_to_employee,
+)
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import status, viewsets
@@ -864,7 +870,13 @@ class AvailabilityChangeRequestViewSet(viewsets.ModelViewSet):
             translate_django_validation(lambda: serializer.save())
             return
         profile = require_employee_profile(self.request)
-        translate_django_validation(lambda: serializer.save(employee=profile))
+        instance = translate_django_validation(lambda: serializer.save(employee=profile))
+        if instance:
+            day_name = dict(enumerate(["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"])).get(instance.day_of_week, "")
+            detail = f"{day_name} → {instance.requested_status}"
+            if instance.effective_date:
+                detail += f" (effective {instance.effective_date})"
+            send_request_submitted_to_managers(profile, "availability change", detail, self.request)
 
     def perform_update(self, serializer):
         translate_django_validation(lambda: serializer.save())
@@ -878,6 +890,9 @@ class AvailabilityChangeRequestViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         instance = self.get_object()
         translate_django_validation(lambda: instance.approve(request.user))
+        day_name = dict(enumerate(["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"])).get(instance.day_of_week, "")
+        detail = f"{day_name} → {instance.requested_status}"
+        send_request_approved_to_employee(instance.employee, "availability change", detail, request)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -925,7 +940,12 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
             ))
             return
         profile = require_employee_profile(self.request)
-        translate_django_validation(lambda: serializer.save(employee=profile))
+        instance = translate_django_validation(lambda: serializer.save(employee=profile))
+        if instance:
+            detail = f"{instance.start_date} → {instance.end_date}"
+            if instance.reason:
+                detail += f": {instance.reason}"
+            send_request_submitted_to_managers(profile, "time off", detail, self.request)
 
     def perform_update(self, serializer):
         translate_django_validation(lambda: serializer.save())
@@ -939,6 +959,8 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         instance = self.get_object()
         translate_django_validation(lambda: instance.approve(request.user))
+        detail = f"{instance.start_date} → {instance.end_date}"
+        send_request_approved_to_employee(instance.employee, "time off", detail, request)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -1017,8 +1039,11 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
                         f"{requested_employee.name} is already scheduled on that day and cannot receive this shift."
                     )
         instance = translate_django_validation(lambda: serializer.save(**extra))
-        if request_type == ShiftSwapRequest.TYPE_PICKUP and instance:
-            _notify_managers_pickup(instance, profile)
+        if instance:
+            if request_type == ShiftSwapRequest.TYPE_PICKUP:
+                _notify_managers_pickup(instance, profile)
+            elif request_type == ShiftSwapRequest.TYPE_SWAP and instance.requested_employee:
+                send_trade_proposed(instance, self.request)
 
     def perform_update(self, serializer):
         translate_django_validation(lambda: serializer.save())
@@ -1060,6 +1085,8 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
 
         instance.coverer_approved = True
         instance.save()
+        if instance.request_type == ShiftSwapRequest.TYPE_SWAP:
+            send_trade_accepted_notify_managers(instance, request)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -1080,6 +1107,13 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         with transaction.atomic():
             translate_django_validation(lambda: instance.approve(request.user))
+        shift = instance.shift
+        shift_start = timezone.localtime(shift.start_time)
+        shift_str = f"{shift_start.strftime('%A, %B %-d')} at {shift_start.strftime('%-I:%M %p')}"
+        type_label = {"swap": "trade", "giveaway": "giveaway", "pickup": "pickup"}.get(instance.request_type, instance.request_type)
+        detail = f"{shift.role.name if shift.role else 'Shift'} — {shift.title} on {shift_str}"
+        recipient = instance.coverer or instance.requester
+        send_request_approved_to_employee(recipient, f"shift {type_label}", detail, request)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
