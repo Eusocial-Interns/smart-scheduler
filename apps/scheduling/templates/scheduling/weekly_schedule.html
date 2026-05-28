@@ -4,7 +4,7 @@
 {% block title %}Weekly Schedule{% endblock %}
 
 {% block page_css %}
-<link rel="stylesheet" href="{% static 'scheduling/css/weekly_schedule.css' %}?v=20260525k">
+<link rel="stylesheet" href="{% static 'scheduling/css/weekly_schedule.css' %}?v=20260526c">
 {% endblock %}
 
 {% block content %}
@@ -130,6 +130,7 @@
                 <button class="button-primary" id="generate-draft" type="button" hidden>Generate Draft</button>
                 <button class="button-ghost" id="copy-last-week" type="button" hidden>Copy Last Week</button>
                 <button class="button-ghost" id="view-snapshot-btn" type="button" hidden>Show Published</button>
+                <button class="button-ghost button-ghost--danger" id="discard-draft-btn" type="button" hidden>Delete Draft</button>
             </div>
             <div class="weekly-board__right">
                 <div class="weekly-board__coverage" id="coverage-summary" hidden>
@@ -233,6 +234,7 @@
             <p id="slot-fill-shift-meta" style="margin:.2rem 0 1rem;font-size:.85rem;color:var(--muted)"></p>
             <div id="slot-fill-list" style="display:flex;flex-direction:column;gap:.5rem;max-height:18rem;overflow-y:auto;"></div>
             <div class="shift-edit-dialog__actions" style="margin-top:1rem">
+                <button class="button-ghost button-ghost--danger" id="slot-fill-delete" type="button">Delete slot</button>
                 <button class="button-ghost" id="slot-fill-cancel" type="button">Cancel</button>
             </div>
         </div>
@@ -257,5 +259,5 @@
 {% endblock %}
 
 {% block page_js %}
-<script src="{% static 'scheduling/js/weekly_schedule.js' %}?v=20260526c"></script>
+<script src="{% static 'scheduling/js/weekly_schedule.js' %}?v=20260528b"></script>
 {% endblock %}

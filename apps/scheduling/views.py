@@ -42,6 +42,8 @@ from apps.scheduling.models import (
     REQUEST_STATUS_APPROVED,
     REQUEST_STATUS_DENIED,
     REQUEST_STATUS_PENDING,
+    _build_shift_snapshot,
+    _sync_shift_open_status,
 )
 from apps.scheduling.permissions import (
     IsAuthenticatedSchedulingUser,
@@ -349,75 +351,6 @@ def _notify_managers_pickup(swap_request, requester):
         pass
 
 
-def _build_shift_snapshot(schedule_week):
-    def fmt_time(dt):
-        return dt.strftime("%I:%M %p").lstrip("0")
-
-    shifts = (
-        Shift.objects.select_related("role")
-        .prefetch_related("assignments__employee")
-        .filter(
-            start_time__date__gte=schedule_week.week_start,
-            start_time__date__lte=schedule_week.week_end,
-        )
-        .order_by("start_time")
-    )
-    requirements = StaffingRequirement.objects.filter(is_active=True)
-    roles_map = {}
-    for shift in shifts:
-        role_name = shift.role.name if shift.role else "General"
-        if role_name not in roles_map:
-            roles_map[role_name] = {
-                "role_id": shift.role_id,
-                "role_name": role_name,
-                "role_department": shift.role.department if shift.role else None,
-                "days": {str(i): [] for i in range(7)},
-            }
-        shift_start = timezone.localtime(shift.start_time)
-        shift_end = timezone.localtime(shift.end_time)
-        day_index = (shift_start.date() - schedule_week.week_start).days
-        if day_index < 0 or day_index > 6:
-            continue
-        assignments = list(shift.assignments.all())
-        for assignment in assignments:
-            roles_map[role_name]["days"][str(day_index)].append({
-                "assignment_id": assignment.id,
-                "employee_id": assignment.employee_id,
-                "shift_id": shift.id,
-                "shift_title": shift.title,
-                "role_id": shift.role_id,
-                "employee_name": assignment.employee.name,
-                "start_time": shift_start.isoformat(),
-                "end_time": shift_end.isoformat(),
-                "display_time": f"Arrive {fmt_time(shift_start)}",
-                "notes": shift.notes,
-                "is_open": False,
-            })
-        matching_req = requirements.filter(
-            role=shift.role,
-            title=shift.title,
-            day_of_week=shift_start.weekday(),
-            start_time=shift_start.time(),
-        ).first()
-        required_count = matching_req.required_count if matching_req else 0
-        open_count = max(required_count - len(assignments), 0)
-        for _ in range(open_count):
-            roles_map[role_name]["days"][str(day_index)].append({
-                "assignment_id": None,
-                "employee_id": None,
-                "shift_id": shift.id,
-                "shift_title": shift.title,
-                "role_id": shift.role_id,
-                "employee_name": "Open",
-                "start_time": shift_start.isoformat(),
-                "end_time": shift_end.isoformat(),
-                "display_time": f"Arrive {fmt_time(shift_start)}",
-                "notes": "",
-                "is_open": True,
-            })
-    return list(roles_map.values())
-
-
 class ScheduleWeekViewSet(viewsets.ModelViewSet):
     serializer_class = ScheduleWeekSerializer
     permission_classes = [IsManagerOrReadOnlySchedulingUser]
@@ -502,6 +435,108 @@ class ScheduleWeekViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(schedule_week)
         return Response(serializer.data)
 
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[IsManager],
+        url_path="discard-draft",
+    )
+    def discard_draft(self, request):
+        week_start = parse_date(request.data.get("week_start", ""))
+        if not week_start:
+            raise ValidationError({"week_start": ["A valid week_start date is required."]})
+
+        try:
+            schedule_week = ScheduleWeek.objects.get(week_start=week_start)
+        except ScheduleWeek.DoesNotExist:
+            raise ValidationError("No schedule found for that week.")
+
+        if not schedule_week.has_unpublished_changes or not schedule_week.published_shifts_snapshot:
+            raise ValidationError("No draft changes to discard.")
+
+        snapshot = schedule_week.published_shifts_snapshot
+        # Collect full shift data from snapshot so we can recreate deleted shifts
+        snapshot_shift_data = {}  # shift_id → {title, role_id, start_time, end_time, notes}
+        snapshot_assignments = []
+        for role_data in snapshot:
+            for day_assignments in role_data.get("days", {}).values():
+                for a in day_assignments:
+                    sid = a.get("shift_id")
+                    if sid and sid not in snapshot_shift_data:
+                        snapshot_shift_data[sid] = {
+                            "title": a.get("shift_title", "Shift"),
+                            "role_id": a.get("role_id"),
+                            "start_time": a.get("start_time"),
+                            "end_time": a.get("end_time"),
+                            "notes": a.get("notes", ""),
+                        }
+                    if not a.get("is_open") and sid and a.get("employee_id"):
+                        snapshot_assignments.append((sid, a["employee_id"]))
+
+        snapshot_shift_ids = set(snapshot_shift_data.keys())
+
+        week_shifts = Shift.objects.filter(
+            start_time__date__gte=schedule_week.week_start,
+            start_time__date__lte=schedule_week.week_end,
+        )
+        shift_ids_to_delete = list(
+            week_shifts.exclude(id__in=snapshot_shift_ids).values_list("id", flat=True)
+        )
+
+        with transaction.atomic():
+            # Delete all current week assignments
+            Assignment.objects.filter(shift__in=week_shifts).delete()
+
+            # Remove draft-only shifts (clean related records first)
+            if shift_ids_to_delete:
+                ShiftSwapRequest.objects.filter(shift_id__in=shift_ids_to_delete).delete()
+                ShiftSwapRequest.objects.filter(target_shift_id__in=shift_ids_to_delete).update(target_shift=None)
+                Shift.objects.filter(id__in=shift_ids_to_delete).delete()
+
+            # Recreate any snapshot shifts that were deleted since publishing
+            existing_shift_ids = set(
+                Shift.objects.filter(id__in=snapshot_shift_ids).values_list("id", flat=True)
+            )
+            for sid in snapshot_shift_ids - existing_shift_ids:
+                data = snapshot_shift_data[sid]
+                if data.get("start_time") and data.get("end_time"):
+                    Shift.objects.create(
+                        id=sid,
+                        title=data["title"],
+                        role_id=data["role_id"],
+                        start_time=data["start_time"],
+                        end_time=data["end_time"],
+                        notes=data["notes"],
+                        schedule_week=schedule_week,
+                    )
+
+            # Restore assignments — skip any whose employee no longer exists
+            valid_employee_ids = set(
+                Employee.objects.filter(
+                    id__in={eid for _, eid in snapshot_assignments}
+                ).values_list("id", flat=True)
+            )
+            live_shift_ids = set(
+                Shift.objects.filter(id__in=snapshot_shift_ids).values_list("id", flat=True)
+            )
+            valid_assignments = [
+                (sid, eid) for sid, eid in snapshot_assignments
+                if sid in live_shift_ids and eid in valid_employee_ids
+            ]
+            Assignment.objects.bulk_create(
+                [Assignment(shift_id=sid, employee_id=eid) for sid, eid in valid_assignments],
+                ignore_conflicts=True,
+            )
+            schedule_week.has_unpublished_changes = False
+            schedule_week.save()
+
+        # bulk_create/delete skip signals — resync is_open for all remaining shifts
+        for shift_id in snapshot_shift_ids:
+            _sync_shift_open_status(shift_id)
+
+        serializer = self.get_serializer(schedule_week)
+        return Response(serializer.data)
+
 
 class ShiftViewSet(viewsets.ModelViewSet):
     serializer_class = ShiftSerializer
@@ -513,6 +548,37 @@ class ShiftViewSet(viewsets.ModelViewSet):
         )
         is_manager = user_is_manager(self.request.user)
         if is_manager:
+            if self.request.query_params.get("for_trade") == "true":
+                profile = employee_profile_for(self.request.user)
+                if not profile:
+                    return queryset.none()
+                today = timezone.localdate()
+                role_ids = set(profile.roles.values_list("id", flat=True))
+                if profile.primary_role_id:
+                    role_ids.add(profile.primary_role_id)
+                busy_dates = set(
+                    Assignment.objects.filter(
+                        employee=profile,
+                        shift__schedule_week__status=ScheduleWeek.STATUS_PUBLISHED,
+                        shift__start_time__date__gte=today,
+                    ).values_list("shift__start_time__date", flat=True)
+                )
+                qs = queryset.filter(
+                    start_time__date__gte=today,
+                    role_id__in=role_ids,
+                    schedule_week__status=ScheduleWeek.STATUS_PUBLISHED,
+                ).exclude(assignments__employee=profile)
+                if busy_dates:
+                    qs = qs.exclude(start_time__date__in=busy_dates)
+                my_shift_id = self.request.query_params.get("my_shift")
+                if my_shift_id:
+                    my_shift = Shift.objects.filter(pk=my_shift_id).first()
+                    if my_shift and my_shift.role_id:
+                        qs = qs.filter(
+                            Q(assignments__employee__roles=my_shift.role_id) |
+                            Q(assignments__employee__primary_role=my_shift.role_id)
+                        )
+                return qs.distinct()
             if self.request.query_params.get("is_open") == "true":
                 queryset = queryset.filter(is_open=True)
             return queryset
@@ -587,6 +653,18 @@ class ShiftViewSet(viewsets.ModelViewSet):
         Shift.objects.filter(pk=shift.pk).update(is_open=shift.is_open)
         serializer = self.get_serializer(shift)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="close-slot", permission_classes=[IsManager])
+    def close_slot(self, request, pk=None):
+        from apps.scheduling.models import _rebuild_published_snapshot
+        shift = self.get_object()
+        assignment_count = shift.assignments.count()
+        Shift.objects.filter(pk=shift.pk).update(
+            slots_override=assignment_count,
+            is_open=False,
+        )
+        _rebuild_published_snapshot({shift.schedule_week_id})
+        return Response({"status": "ok"})
 
 
 class AvailabilityViewSet(viewsets.ModelViewSet):
@@ -1015,12 +1093,14 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
         return ShiftSwapRequest.objects.none()
 
     def perform_create(self, serializer):
-        if user_is_manager(self.request.user):
-            translate_django_validation(lambda: serializer.save())
-            return
         profile = require_employee_profile(self.request)
         request_type = serializer.validated_data.get("request_type", ShiftSwapRequest.TYPE_GIVEAWAY)
         extra = {"requester": profile}
+        if user_is_manager(self.request.user):
+            instance = translate_django_validation(lambda: serializer.save(**extra))
+            if instance and request_type == ShiftSwapRequest.TYPE_SWAP and instance.requested_employee:
+                send_trade_proposed(instance, self.request)
+            return
         if request_type == ShiftSwapRequest.TYPE_PICKUP:
             extra["coverer"] = profile
             extra["coverer_approved"] = True
@@ -1085,8 +1165,20 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
 
         instance.coverer_approved = True
         instance.save()
-        if instance.request_type == ShiftSwapRequest.TYPE_SWAP:
-            send_trade_accepted_notify_managers(instance, request)
+
+        both_managers = (
+            instance.request_type == ShiftSwapRequest.TYPE_SWAP
+            and instance.requester
+            and instance.requester.account_type == Employee.ACCOUNT_TYPE_MANAGER
+            and profile.account_type == Employee.ACCOUNT_TYPE_MANAGER
+        )
+        if both_managers:
+            with transaction.atomic():
+                translate_django_validation(lambda: instance.approve(request.user))
+        else:
+            if instance.request_type == ShiftSwapRequest.TYPE_SWAP:
+                send_trade_accepted_notify_managers(instance, request)
+
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -1278,9 +1370,8 @@ class WeeklyScheduleAPIView(APIView):
                         )
                     )
             if is_manager:
-                required_count = requirement_counts.get(shift.id, len(assignments))
-                open_count = max(required_count - len(assignments), 0)
-                for _ in range(open_count):
+                required_count = requirement_counts.get(shift.id, 0)
+                if required_count > len(assignments):
                     row["days"][str(day_index)].append(
                         self._format_assignment(
                             shift,
@@ -1338,14 +1429,17 @@ class WeeklyScheduleAPIView(APIView):
             "role"
         )
         for shift in shifts:
-            shift_start = timezone.localtime(shift.start_time)
-            matching_requirement = requirements.filter(
-                role=shift.role,
-                title=shift.title,
-                day_of_week=shift_start.weekday(),
-                start_time=shift_start.time(),
-            ).first()
-            counts[shift.id] = matching_requirement.required_count if matching_requirement else 0
+            if shift.slots_override is not None:
+                counts[shift.id] = shift.slots_override
+            else:
+                shift_start = timezone.localtime(shift.start_time)
+                matching_requirement = requirements.filter(
+                    role=shift.role,
+                    title=shift.title,
+                    day_of_week=shift_start.weekday(),
+                    start_time=shift_start.time(),
+                ).first()
+                counts[shift.id] = matching_requirement.required_count if matching_requirement else 0
         return counts
 
     def _format_assignment(
@@ -1472,15 +1566,7 @@ class DashboardAPIView(APIView):
         is_manager = user_is_manager(request.user)
         today = timezone.localdate()
 
-        open_shifts = list(
-            Shift.objects.filter(
-                is_open=True,
-                schedule_week__status=ScheduleWeek.STATUS_PUBLISHED,
-                start_time__date__gte=today,
-            )
-            .select_related("role")
-            .order_by("start_time")[:10]
-        )
+        open_shifts = self._get_published_open_shifts(today)
 
         if is_manager:
             pending_time_off = list(
@@ -1698,7 +1784,46 @@ class DashboardAPIView(APIView):
             })
         return result
 
+    def _get_published_open_shifts(self, today):
+        from django.db.models import Count as DbCount
+
+        shifts = list(
+            Shift.objects.filter(
+                schedule_week__status=ScheduleWeek.STATUS_PUBLISHED,
+                start_time__date__gte=today,
+            )
+            .annotate(assignment_count=DbCount("assignments", distinct=True))
+            .select_related("role")
+            .order_by("start_time__date", "start_time")
+        )
+
+        requirements = list(StaffingRequirement.objects.filter(is_active=True).select_related("role"))
+
+        open_shifts = []
+        for shift in shifts:
+            shift_start = timezone.localtime(shift.start_time)
+            if shift.slots_override is not None:
+                required_count = shift.slots_override
+            else:
+                matching_req = next(
+                    (r for r in requirements
+                     if r.role_id == shift.role_id
+                     and r.title == shift.title
+                     and r.day_of_week == shift_start.weekday()
+                     and r.start_time == shift_start.time()),
+                    None,
+                )
+                required_count = matching_req.required_count if matching_req else 0
+            if shift.assignment_count < required_count:
+                open_shifts.append(shift)
+            if len(open_shifts) >= 10:
+                break
+
+        return open_shifts
+
     def _format_today_workers(self, today):
+        if ClosedDay.objects.filter(date=today).exists():
+            return {"management": [], "foh": [], "boh": []}
         published_q = (
             Q(shift__schedule_week__status=ScheduleWeek.STATUS_PUBLISHED)
             | Q(shift__schedule_week__department_statuses__foh=ScheduleWeek.STATUS_PUBLISHED)

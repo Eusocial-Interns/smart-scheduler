@@ -50,6 +50,9 @@ async function bootstrapTeamSetup() {
     employeeList.addEventListener("click", handleEmployeeListClick);
     document.getElementById("employee-edit-form").addEventListener("submit", saveEmployeeEdit);
     document.getElementById("emp-edit-cancel").addEventListener("click", closeEmployeeEditor);
+    document.getElementById("emp-edit-delete").addEventListener("click", () => {
+        if (state.editingEmployee) deleteEmployee(state.editingEmployee.id);
+    });
     document.getElementById("employee-edit-modal").addEventListener("click", (e) => {
         if (e.target === e.currentTarget) closeEmployeeEditor();
     });
@@ -644,6 +647,18 @@ async function saveEmployeeEdit(event) {
         setStatus("Employee updated.", "success");
     } catch (error) {
         setStatus(error.message || "Unable to update employee.", "error");
+    }
+}
+
+async function deleteEmployee(employeeId) {
+    if (!confirm("Delete this employee? This will remove all their assignments and cannot be undone.")) return;
+    closeEmployeeEditor();
+    try {
+        await fetchJson(`/api/v1/employees/${employeeId}/`, { method: "DELETE" });
+        await hydrateTeamSetup();
+        setStatus("Employee deleted.", "success");
+    } catch (err) {
+        setStatus(err.message || "Unable to delete employee.", "error");
     }
 }
 

@@ -282,6 +282,15 @@
   line-height: 1;
 }
 
+.shift-card__date-month {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+  margin-top: 0.1rem;
+}
+
 .shift-card__title {
   font-weight: 700;
   font-size: 0.9rem;

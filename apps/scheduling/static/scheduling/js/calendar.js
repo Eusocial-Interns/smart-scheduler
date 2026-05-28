@@ -60,7 +60,9 @@ function fmtRelative(iso) {
 function renderShiftCard(shift, opts = {}) {
   const parts = shift.date_label?.split(",") ?? ["", ""];
   const dayPart = parts[0]?.trim() ?? "";
-  const numPart = parts[1]?.trim().split(" ")[1] ?? "";
+  const monthNum = parts[1]?.trim().split(" ") ?? [];
+  const monthPart = monthNum[0] ?? "";
+  const numPart = monthNum[1] ?? "";
   const isOpen = opts.isOpen;
   const isMine = opts.isMine;
   const hasPendingPickup = !!shift.has_pending_pickup;
@@ -87,6 +89,7 @@ function renderShiftCard(shift, opts = {}) {
       <div class="shift-card__date">
         <span class="shift-card__date-day">${dayPart}</span>
         <span class="shift-card__date-num">${numPart}</span>
+        <span class="shift-card__date-month">${monthPart}</span>
       </div>
       <div class="shift-card__title">${shift.title ?? "Shift"}</div>
       <div class="shift-card__meta">

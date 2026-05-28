@@ -189,6 +189,11 @@ textarea {
     border: 1px solid rgba(201, 108, 43, 0.18);
 }
 
+.button-ghost--danger {
+    color: #b72b2b;
+    border-color: rgba(183, 43, 43, 0.22);
+}
+
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -467,6 +467,7 @@ class Shift(models.Model):
     end_time = models.DateTimeField()
     notes = models.TextField(blank=True)
     is_open = models.BooleanField(default=False)
+    slots_override = models.IntegerField(null=True, blank=True)
     schedule_week = models.ForeignKey(
         ScheduleWeek,
         on_delete=models.SET_NULL,
@@ -715,6 +716,7 @@ class ShiftSwapRequest(models.Model):
                     Shift.objects.filter(pk=self.shift_id).update(is_open=True)
                     self.applied_at = timezone.now()
                     type(self).objects.filter(pk=self.pk).update(applied_at=self.applied_at)
+                    _rebuild_published_snapshot({self.shift.schedule_week_id})
                     return
                 raise ValidationError(
                     "No one has accepted this swap yet — cannot apply it."
@@ -728,6 +730,8 @@ class ShiftSwapRequest(models.Model):
                     f"{self.requester.name} is no longer assigned to that shift. "
                     "The schedule may have changed since this request was made."
                 )
+
+            affected_week_ids = {self.shift.schedule_week_id}
 
             if self.request_type == self.TYPE_SWAP and self.target_shift:
                 target_assignment = Assignment.objects.filter(
@@ -763,6 +767,7 @@ class ShiftSwapRequest(models.Model):
 
                 target_assignment.employee = self.requester
                 target_assignment.save()
+                affected_week_ids.add(self.target_shift.schedule_week_id)
 
             assignment.employee = coverer
             assignment.save()
@@ -774,9 +779,11 @@ class ShiftSwapRequest(models.Model):
                 Assignment.objects.create(employee=self.requester, shift=self.shift)
             self.shift.is_open = False
             Shift.objects.filter(pk=self.shift_id).update(is_open=False)
+            affected_week_ids = {self.shift.schedule_week_id}
 
         self.applied_at = timezone.now()
         type(self).objects.filter(pk=self.pk).update(applied_at=self.applied_at)
+        _rebuild_published_snapshot(affected_week_ids)
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -848,6 +855,94 @@ class ClosedDay(models.Model):
         return str(self.date)
 
 
+def _build_shift_snapshot(schedule_week):
+    def fmt_time(dt):
+        return dt.strftime("%I:%M %p").lstrip("0")
+
+    shifts = (
+        Shift.objects.select_related("role")
+        .prefetch_related("assignments__employee")
+        .filter(
+            start_time__date__gte=schedule_week.week_start,
+            start_time__date__lte=schedule_week.week_end,
+        )
+        .order_by("start_time")
+    )
+    requirements = StaffingRequirement.objects.filter(is_active=True)
+    roles_map = {}
+    for shift in shifts:
+        role_name = shift.role.name if shift.role else "General"
+        if role_name not in roles_map:
+            roles_map[role_name] = {
+                "role_id": shift.role_id,
+                "role_name": role_name,
+                "role_department": shift.role.department if shift.role else None,
+                "days": {str(i): [] for i in range(7)},
+            }
+        shift_start = timezone.localtime(shift.start_time)
+        shift_end = timezone.localtime(shift.end_time)
+        day_index = (shift_start.date() - schedule_week.week_start).days
+        if day_index < 0 or day_index > 6:
+            continue
+        assignments = list(shift.assignments.all())
+        for assignment in assignments:
+            roles_map[role_name]["days"][str(day_index)].append({
+                "assignment_id": assignment.id,
+                "employee_id": assignment.employee_id,
+                "shift_id": shift.id,
+                "shift_title": shift.title,
+                "role_id": shift.role_id,
+                "employee_name": assignment.employee.name,
+                "start_time": shift_start.isoformat(),
+                "end_time": shift_end.isoformat(),
+                "display_time": f"Arrive {fmt_time(shift_start)}",
+                "notes": shift.notes,
+                "is_open": False,
+            })
+        if shift.slots_override is not None:
+            required_count = shift.slots_override
+        else:
+            matching_req = requirements.filter(
+                role=shift.role,
+                title=shift.title,
+                day_of_week=shift_start.weekday(),
+                start_time=shift_start.time(),
+            ).first()
+            required_count = matching_req.required_count if matching_req else 0
+        if required_count > len(assignments):
+            roles_map[role_name]["days"][str(day_index)].append({
+                "assignment_id": None,
+                "employee_id": None,
+                "shift_id": shift.id,
+                "shift_title": shift.title,
+                "role_id": shift.role_id,
+                "employee_name": "Open",
+                "start_time": shift_start.isoformat(),
+                "end_time": shift_end.isoformat(),
+                "display_time": f"Arrive {fmt_time(shift_start)}",
+                "notes": "",
+                "is_open": True,
+            })
+    return list(roles_map.values())
+
+
+def _rebuild_published_snapshot(week_ids):
+    """Rebuild snapshot for each published week and clear has_unpublished_changes."""
+    for week_id in week_ids:
+        if not week_id:
+            continue
+        week = ScheduleWeek.objects.filter(
+            pk=week_id,
+            status=ScheduleWeek.STATUS_PUBLISHED,
+        ).first()
+        if week:
+            snapshot = _build_shift_snapshot(week)
+            ScheduleWeek.objects.filter(pk=week.pk).update(
+                published_shifts_snapshot=snapshot,
+                has_unpublished_changes=False,
+            )
+
+
 def _mark_week_dirty(schedule_week_id):
     if schedule_week_id:
         ScheduleWeek.objects.filter(
@@ -862,15 +957,18 @@ def _sync_shift_open_status(shift_id):
     if not shift:
         return
     assignment_count = Assignment.objects.filter(shift_id=shift_id).count()
-    shift_start_local = timezone.localtime(shift.start_time)
-    requirement = StaffingRequirement.objects.filter(
-        role=shift.role,
-        title=shift.title,
-        day_of_week=shift_start_local.weekday(),
-        start_time=shift_start_local.time(),
-        is_active=True,
-    ).first()
-    required_count = requirement.required_count if requirement else 1
+    if shift.slots_override is not None:
+        required_count = shift.slots_override
+    else:
+        shift_start_local = timezone.localtime(shift.start_time)
+        requirement = StaffingRequirement.objects.filter(
+            role=shift.role,
+            title=shift.title,
+            day_of_week=shift_start_local.weekday(),
+            start_time=shift_start_local.time(),
+            is_active=True,
+        ).first()
+        required_count = requirement.required_count if requirement else 1
     is_open = assignment_count < required_count
     Shift.objects.filter(pk=shift_id).update(is_open=is_open)
 

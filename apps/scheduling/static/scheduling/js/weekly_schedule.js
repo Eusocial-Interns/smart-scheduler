@@ -11,6 +11,7 @@ const weeklyTitle = document.getElementById("weekly-title");
 const weeklyCopy = document.getElementById("weekly-copy");
 const generateDraftButton = document.getElementById("generate-draft");
 const copyLastWeekButton = document.getElementById("copy-last-week");
+const discardDraftButton = document.getElementById("discard-draft-btn");
 const publishWeekButton = document.getElementById("publish-week");
 const staffingRequirementsPanel = document.getElementById("staffing-requirements-panel");
 const staffingRequirementForm = document.getElementById("staffing-requirement-form");
@@ -145,6 +146,7 @@ function bootstrapWeeklySchedule() {
         }
     });
     document.getElementById("slot-fill-cancel").addEventListener("click", closeSlotFillModal);
+    document.getElementById("slot-fill-delete")?.addEventListener("click", deleteOpenSlot);
     document.getElementById("slot-fill-modal").addEventListener("click", (event) => {
         if (event.target === document.getElementById("slot-fill-modal")) closeSlotFillModal();
     });
@@ -152,9 +154,10 @@ function bootstrapWeeklySchedule() {
     document.getElementById("unavailability-force").addEventListener("click", forceAssign);
     generateDraftButton.addEventListener("click", generateDraft);
     copyLastWeekButton.addEventListener("click", copyLastWeek);
+    discardDraftButton.addEventListener("click", discardDraft);
     publishWeekButton.addEventListener("click", publishWeek);
     document.getElementById("view-snapshot-btn").addEventListener("click", () => {
-        state.viewingSnapshot = true;
+        state.viewingSnapshot = !state.viewingSnapshot;
         if (state.schedule) renderSchedule(state.schedule);
     });
     document.getElementById("back-to-draft-btn").addEventListener("click", () => {
@@ -355,7 +358,10 @@ function renderSchedule(schedule) {
     const isPublished = effectiveStatus === "published";
     const hasPendingChanges = isPublished && schedule.has_unpublished_changes;
     if (isManager()) {
-        if (hasPendingChanges) {
+        if (state.viewingSnapshot) {
+            scheduleStatus.textContent = "Published";
+            scheduleStatus.className = "pill pill--published";
+        } else if (hasPendingChanges) {
             scheduleStatus.textContent = "Changes Pending";
             scheduleStatus.className = "pill pill--pending";
         } else {
@@ -364,7 +370,15 @@ function renderSchedule(schedule) {
         }
         scheduleStatus.hidden = false;
         if (publishWeekButton) {
-            publishWeekButton.textContent = hasPendingChanges ? "Republish" : "Publish";
+            if (state.viewingSnapshot) {
+                publishWeekButton.textContent = "Published";
+                publishWeekButton.disabled = true;
+                publishWeekButton.className = "button-ghost";
+            } else {
+                publishWeekButton.textContent = hasPendingChanges ? "Republish" : "Publish";
+                publishWeekButton.disabled = false;
+                publishWeekButton.className = "button-secondary";
+            }
         }
     } else {
         scheduleStatus.hidden = true;
@@ -388,24 +402,32 @@ function renderSchedule(schedule) {
         // Banners
         if (state.viewingSnapshot) {
             if (pendingBanner) pendingBanner.hidden = true;
-            if (snapshotBanner && schedule.published_at) {
-                const lastPub = new Date(schedule.published_at);
-                const dateStr = lastPub.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-                snapshotBanner.querySelector(".snapshot-banner__date").textContent = dateStr;
+            if (snapshotBanner) {
+                if (schedule.published_at) {
+                    const lastPub = new Date(schedule.published_at);
+                    const dateStr = lastPub.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                    snapshotBanner.querySelector(".snapshot-banner__date").textContent = dateStr;
+                }
                 snapshotBanner.hidden = false;
             }
         } else {
             if (snapshotBanner) snapshotBanner.hidden = true;
-            if (pendingBanner && schedule.published_at) {
-                const lastPub = new Date(schedule.published_at);
-                const dateStr = lastPub.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-                pendingBanner.querySelector(".pending-banner__date").textContent = `Last published ${dateStr}`;
+            if (pendingBanner) {
+                if (schedule.published_at) {
+                    const lastPub = new Date(schedule.published_at);
+                    const dateStr = lastPub.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                    pendingBanner.querySelector(".pending-banner__date").textContent = `Last published ${dateStr}`;
+                }
                 pendingBanner.hidden = false;
             }
         }
         // Disable editing controls in snapshot mode
         if (generateDraftButton) generateDraftButton.disabled = state.viewingSnapshot;
         if (copyLastWeekButton) copyLastWeekButton.disabled = state.viewingSnapshot;
+        if (discardDraftButton) {
+            discardDraftButton.hidden = state.viewingSnapshot;
+            discardDraftButton.disabled = state.viewingSnapshot;
+        }
         if (publishWeekButton) publishWeekButton.disabled = state.viewingSnapshot;
     } else {
         if (snapshotBtn) snapshotBtn.hidden = true;
@@ -413,6 +435,7 @@ function renderSchedule(schedule) {
         if (pendingBanner) pendingBanner.hidden = true;
         if (generateDraftButton) generateDraftButton.disabled = false;
         if (copyLastWeekButton) copyLastWeekButton.disabled = false;
+        if (discardDraftButton) discardDraftButton.hidden = true;
         if (publishWeekButton) publishWeekButton.disabled = false;
     }
 
@@ -465,25 +488,49 @@ function renderSchedule(schedule) {
         return;
     }
 
-    rolesToRender.forEach((role) => {
-        weeklyGrid.insertAdjacentHTML(
-            "beforeend",
-            `<div class="weekly-role">${escapeHtml(role.role_name)}</div>`
-        );
+    const deptOrder = ["management", "boh", "foh"];
+    const deptLabels = { management: "Management", boh: "Back of House", foh: "Front of House" };
+    const showDividers = isManager() && !state.activeDepartment;
 
-        schedule.days.forEach((day) => {
-            const assignments = (role.days[String(day.index)] || [])
-                .slice()
-                .sort((a, b) => shiftSortOrder(a.shift_title) - shiftSortOrder(b.shift_title));
-            const managerEmptyLabel = isManager() ? "Open" : "";
-            const isClosed = !!day.closed;
+    if (showDividers) {
+        const grouped = {};
+        deptOrder.forEach((d) => { grouped[d] = []; });
+        rolesToRender.forEach((role) => {
+            const dept = role.role_department || "foh";
+            if (grouped[dept]) grouped[dept].push(role);
+            else grouped["foh"].push(role);
+        });
+
+        deptOrder.forEach((dept) => {
+            if (!grouped[dept].length) return;
             weeklyGrid.insertAdjacentHTML(
                 "beforeend",
-                `<div class="weekly-cell${!isClosed && assignments.length ? "" : " is-empty"}${isClosed ? " weekly-cell--closed" : ""}" data-role-id="${role.role_id || ""}" data-role-name="${escapeHtml(role.role_name || "")}" data-date="${escapeHtml(day.date)}">
-                    ${isClosed ? '<span class="weekly-cell__closed">Closed</span>' : (assignments.length ? assignments.map(renderAssignment).join("") : managerEmptyLabel)}
-                </div>`
+                `<div class="weekly-dept-divider">${deptLabels[dept]}</div>`
             );
+            grouped[dept].forEach((role) => renderRoleRow(role, schedule));
         });
+    } else {
+        rolesToRender.forEach((role) => renderRoleRow(role, schedule));
+    }
+}
+
+function renderRoleRow(role, schedule) {
+    weeklyGrid.insertAdjacentHTML(
+        "beforeend",
+        `<div class="weekly-role">${escapeHtml(role.role_name)}</div>`
+    );
+    schedule.days.forEach((day) => {
+        const assignments = (role.days[String(day.index)] || [])
+            .slice()
+            .sort((a, b) => shiftSortOrder(a.shift_title) - shiftSortOrder(b.shift_title));
+        const managerEmptyLabel = isManager() ? "Open" : "";
+        const isClosed = !!day.closed;
+        weeklyGrid.insertAdjacentHTML(
+            "beforeend",
+            `<div class="weekly-cell${!isClosed && assignments.length ? "" : " is-empty"}${isClosed ? " weekly-cell--closed" : ""}" data-role-id="${role.role_id || ""}" data-role-name="${escapeHtml(role.role_name || "")}" data-date="${escapeHtml(day.date)}">
+                ${isClosed ? '<span class="weekly-cell__closed">Closed</span>' : (assignments.length ? assignments.map(renderAssignment).join("") : managerEmptyLabel)}
+            </div>`
+        );
     });
 }
 
@@ -1145,6 +1192,7 @@ async function openSlotFillModal(card) {
     heading.textContent = shiftTitle;
     meta.textContent = `${roleName ? roleName + " · " : ""}${date ? formatDate(date) : ""}`;
     list.innerHTML = '<div class="empty-state">Loading available employees…</div>';
+    modal.dataset.shiftId = shiftId;
     modal.hidden = false;
 
     try {
@@ -1170,6 +1218,21 @@ async function openSlotFillModal(card) {
 
 function closeSlotFillModal() {
     document.getElementById("slot-fill-modal").hidden = true;
+}
+
+async function deleteOpenSlot() {
+    const modal = document.getElementById("slot-fill-modal");
+    const shiftId = modal.dataset.shiftId;
+    if (!shiftId) return;
+    closeSlotFillModal();
+    try {
+        await fetchJson(`/api/v1/shifts/${shiftId}/close-slot/`, { method: "POST" });
+        state.lastGenerationSummary = null;
+        await loadSchedule();
+        setStatus("Slot deleted.", "success");
+    } catch (err) {
+        setStatus(err.message || "Unable to delete slot.", "error");
+    }
 }
 
 async function assignToOpenSlot(employeeId, shiftId, employeeName) {
@@ -1479,6 +1542,26 @@ async function copyLastWeek() {
     }
 }
 
+
+async function discardDraft() {
+    if (!confirm("Delete the current draft and revert to the last published schedule? This cannot be undone.")) return;
+    discardDraftButton.disabled = true;
+    setStatus("Reverting to published schedule...", "");
+    try {
+        await fetchJson("/api/v1/schedule-weeks/discard-draft/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ week_start: dateKey(state.weekStart) }),
+        });
+        state.lastGenerationSummary = null;
+        state.viewingSnapshot = false;
+        await loadSchedule();
+        setStatus("Reverted to published schedule.", "success");
+    } catch (error) {
+        setStatus(error.message || "Unable to discard draft.", "error");
+        discardDraftButton.disabled = false;
+    }
+}
 
 async function loadClosedDays() {
     const weekEnd = new Date(state.weekStart);
