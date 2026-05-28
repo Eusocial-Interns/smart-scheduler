@@ -167,6 +167,144 @@ def send_request_submitted_to_managers(employee, request_type_label, detail, htt
     _send(subject, text_body, html_body, manager_emails)
 
 
+# ── Swap/giveaway/pickup applied → parties involved ──────────────────────────
+
+def send_swap_applied(swap_request, http_request):
+    from apps.scheduling.models import ShiftSwapRequest
+
+    requester = swap_request.requester
+    coverer = swap_request.coverer or swap_request.requested_employee
+    shift = swap_request.shift
+    target_shift = swap_request.target_shift
+    url = _requests_url(http_request)
+
+    shift_start = timezone.localtime(shift.start_time)
+    shift_str = shift_start.strftime("%A, %B %-d at %-I:%M %p")
+    role_name = shift.role.name if shift.role else "Shift"
+
+    if swap_request.request_type == ShiftSwapRequest.TYPE_SWAP and target_shift:
+        target_start = timezone.localtime(target_shift.start_time)
+        target_str = target_start.strftime("%A, %B %-d at %-I:%M %p")
+        target_role = target_shift.role.name if target_shift.role else "Shift"
+
+        if requester and requester.email:
+            _send(
+                f"Shift swap confirmed — {target_role} on {target_str}",
+                (
+                    f"Hi {requester.name},\n\n"
+                    f"Your shift swap has been approved and applied.\n\n"
+                    f"  Now scheduled for: {target_role} on {target_str}\n"
+                    f"  Gave away: {role_name} on {shift_str}\n\n"
+                    f"View your schedule: {url}"
+                ),
+                (
+                    f"<p>Hi <strong>{requester.name}</strong>,</p>"
+                    f"<p>Your shift swap has been approved and applied.</p>"
+                    f"<ul>"
+                    f"<li><strong>Now scheduled for:</strong> {target_role} on {target_str}</li>"
+                    f"<li><strong>Gave away:</strong> {role_name} on {shift_str}</li>"
+                    f"</ul>"
+                    f"<p><a href='{url}'>View your schedule</a></p>"
+                ),
+                [requester.email],
+            )
+        if coverer and coverer.email:
+            _send(
+                f"Shift swap confirmed — {role_name} on {shift_str}",
+                (
+                    f"Hi {coverer.name},\n\n"
+                    f"Your shift swap has been approved and applied.\n\n"
+                    f"  Now scheduled for: {role_name} on {shift_str}\n"
+                    f"  Gave away: {target_role} on {target_str}\n\n"
+                    f"View your schedule: {url}"
+                ),
+                (
+                    f"<p>Hi <strong>{coverer.name}</strong>,</p>"
+                    f"<p>Your shift swap has been approved and applied.</p>"
+                    f"<ul>"
+                    f"<li><strong>Now scheduled for:</strong> {role_name} on {shift_str}</li>"
+                    f"<li><strong>Gave away:</strong> {target_role} on {target_str}</li>"
+                    f"</ul>"
+                    f"<p><a href='{url}'>View your schedule</a></p>"
+                ),
+                [coverer.email],
+            )
+
+    elif swap_request.request_type == ShiftSwapRequest.TYPE_GIVEAWAY:
+        if coverer:
+            if requester and requester.email:
+                _send(
+                    f"Shift giveaway confirmed — {role_name} on {shift_str}",
+                    (
+                        f"Hi {requester.name},\n\n"
+                        f"Your shift giveaway has been approved.\n\n"
+                        f"  Removed from your schedule: {role_name} on {shift_str}\n\n"
+                        f"View your schedule: {url}"
+                    ),
+                    (
+                        f"<p>Hi <strong>{requester.name}</strong>,</p>"
+                        f"<p>Your shift giveaway has been approved.</p>"
+                        f"<ul><li><strong>Removed from your schedule:</strong> {role_name} on {shift_str}</li></ul>"
+                        f"<p><a href='{url}'>View your schedule</a></p>"
+                    ),
+                    [requester.email],
+                )
+            if coverer.email:
+                _send(
+                    f"Shift confirmed — {role_name} on {shift_str}",
+                    (
+                        f"Hi {coverer.name},\n\n"
+                        f"A shift has been added to your schedule.\n\n"
+                        f"  Added to your schedule: {role_name} on {shift_str}\n\n"
+                        f"View your schedule: {url}"
+                    ),
+                    (
+                        f"<p>Hi <strong>{coverer.name}</strong>,</p>"
+                        f"<p>A shift has been added to your schedule.</p>"
+                        f"<ul><li><strong>Added:</strong> {role_name} on {shift_str}</li></ul>"
+                        f"<p><a href='{url}'>View your schedule</a></p>"
+                    ),
+                    [coverer.email],
+                )
+        else:
+            if requester and requester.email:
+                _send(
+                    f"Shift removed — {role_name} on {shift_str}",
+                    (
+                        f"Hi {requester.name},\n\n"
+                        f"Your shift giveaway was approved. The shift has been removed from your schedule.\n\n"
+                        f"  Removed: {role_name} on {shift_str}\n\n"
+                        f"View your schedule: {url}"
+                    ),
+                    (
+                        f"<p>Hi <strong>{requester.name}</strong>,</p>"
+                        f"<p>Your shift giveaway was approved. The shift has been removed from your schedule.</p>"
+                        f"<ul><li><strong>Removed:</strong> {role_name} on {shift_str}</li></ul>"
+                        f"<p><a href='{url}'>View your schedule</a></p>"
+                    ),
+                    [requester.email],
+                )
+
+    elif swap_request.request_type == ShiftSwapRequest.TYPE_PICKUP:
+        if requester and requester.email:
+            _send(
+                f"Pickup confirmed — {role_name} on {shift_str}",
+                (
+                    f"Hi {requester.name},\n\n"
+                    f"Your shift pickup has been confirmed.\n\n"
+                    f"  Added to your schedule: {role_name} on {shift_str}\n\n"
+                    f"View your schedule: {url}"
+                ),
+                (
+                    f"<p>Hi <strong>{requester.name}</strong>,</p>"
+                    f"<p>Your shift pickup has been confirmed.</p>"
+                    f"<ul><li><strong>Added to your schedule:</strong> {role_name} on {shift_str}</li></ul>"
+                    f"<p><a href='{url}'>View your schedule</a></p>"
+                ),
+                [requester.email],
+            )
+
+
 # ── Request approved → employee ───────────────────────────────────────────────
 
 def send_request_approved_to_employee(employee, request_type_label, detail, http_request):

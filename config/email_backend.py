@@ -16,14 +16,19 @@ class ResendEmailBackend(BaseEmailBackend):
         sent = 0
         for msg in email_messages:
             try:
-                resend.Emails.send({
+                payload = {
                     "from": msg.from_email,
                     "to": msg.to,
                     "subject": msg.subject,
                     "text": msg.body,
-                })
+                }
+                for content, mimetype in getattr(msg, "alternatives", []):
+                    if mimetype == "text/html":
+                        payload["html"] = content
+                        break
+                resend.Emails.send(payload)
                 sent += 1
-            except Exception as e:
+            except Exception:
                 if not self.fail_silently:
                     raise
         return sent

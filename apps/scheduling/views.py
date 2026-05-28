@@ -14,6 +14,7 @@ from .emails import (
     send_trade_accepted_notify_managers,
     send_request_submitted_to_managers,
     send_request_approved_to_employee,
+    send_swap_applied,
 )
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -1173,8 +1174,12 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
             and profile.account_type == Employee.ACCOUNT_TYPE_MANAGER
         )
         if both_managers:
+            was_applied = bool(instance.applied_at)
             with transaction.atomic():
                 translate_django_validation(lambda: instance.approve(request.user))
+            instance.refresh_from_db()
+            if instance.applied_at and not was_applied:
+                send_swap_applied(instance, request)
         else:
             if instance.request_type == ShiftSwapRequest.TYPE_SWAP:
                 send_trade_accepted_notify_managers(instance, request)
@@ -1197,15 +1202,20 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[IsManager])
     def approve(self, request, pk=None):
         instance = self.get_object()
+        was_applied = bool(instance.applied_at)
         with transaction.atomic():
             translate_django_validation(lambda: instance.approve(request.user))
-        shift = instance.shift
-        shift_start = timezone.localtime(shift.start_time)
-        shift_str = f"{shift_start.strftime('%A, %B %-d')} at {shift_start.strftime('%-I:%M %p')}"
-        type_label = {"swap": "trade", "giveaway": "giveaway", "pickup": "pickup"}.get(instance.request_type, instance.request_type)
-        detail = f"{shift.role.name if shift.role else 'Shift'} — {shift.title} on {shift_str}"
-        recipient = instance.coverer or instance.requester
-        send_request_approved_to_employee(recipient, f"shift {type_label}", detail, request)
+        instance.refresh_from_db()
+        if instance.applied_at and not was_applied:
+            send_swap_applied(instance, request)
+        else:
+            shift = instance.shift
+            shift_start = timezone.localtime(shift.start_time)
+            shift_str = f"{shift_start.strftime('%A, %B %-d')} at {shift_start.strftime('%-I:%M %p')}"
+            type_label = {"swap": "trade", "giveaway": "giveaway", "pickup": "pickup"}.get(instance.request_type, instance.request_type)
+            detail = f"{shift.role.name if shift.role else 'Shift'} — {shift.title} on {shift_str}"
+            recipient = instance.coverer or instance.requester
+            send_request_approved_to_employee(recipient, f"shift {type_label}", detail, request)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
