@@ -22,6 +22,8 @@ def health_check(request):
 
 @method_decorator(never_cache, name="dispatch")
 class LoggingPasswordResetView(PasswordResetView):
+    html_email_template_name = "registration/password_reset_email_html.html"
+
     def form_valid(self, form):
         self.request.session['password_reset_requested'] = True
         try:
