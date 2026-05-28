@@ -325,12 +325,13 @@ textarea {
 
 .status-banner {
     position: fixed;
-    left: 1rem;
-    right: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+
     bottom: calc(90px + env(safe-area-inset-bottom, 0px));
     z-index: 99999;
 
-    width: fit-content;
+    width: max-content;
     max-width: calc(100vw - 2rem);
     margin-inline: auto;
 
@@ -339,6 +340,9 @@ textarea {
     background: rgba(255, 251, 246, 0.97);
     border: 1px solid var(--line);
     box-shadow: 0 8px 28px rgba(30, 18, 10, 0.18);
+
+    text-align: center;
+    white-space: nowrap;
 
     opacity: 0;
     pointer-events: none;
@@ -377,7 +381,7 @@ textarea {
     }
 
     .status-banner {
-        bottom: calc(200px + env(safe-area-inset-bottom, 16px) + 1rem);
+        bottom: calc(100px + env(safe-area-inset-bottom, 16px) + 1rem);
         white-space: nowrap;
         max-width: calc(100vw - 3rem);
     }
