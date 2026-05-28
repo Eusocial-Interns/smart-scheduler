@@ -82,24 +82,34 @@ def send_trade_proposed(swap_request, http_request):
     shift_start = timezone.localtime(shift.start_time)
     shift_str = f"{shift_start.strftime('%A, %B %-d')} at {shift_start.strftime('%-I:%M %p')}"
     role_name = shift.role.name if shift.role else "Shift"
+    is_giveaway = swap_request.request_type == "giveaway"
 
-    subject = f"{requester_name} wants to trade shifts with you"
+    subject = (
+        f"{requester_name} wants to give you a shift"
+        if is_giveaway
+        else f"{requester_name} wants to trade shifts with you"
+    )
     url = _requests_url(http_request)
     text_body = (
         f"Hi {target.name},\n\n"
-        f"{requester_name} has proposed a shift trade with you.\n\n"
+        f"{requester_name} {'wants to give you' if is_giveaway else 'has proposed a shift trade with'} you.\n\n"
         f"  Their shift: {role_name} — {shift.title} on {shift_str}\n"
         + (f"  Reason: {swap_request.reason}\n" if swap_request.reason else "")
         + f"\nLog in to accept or decline: {url}"
     )
-    html_body = (
-        f"<p>Hi <strong>{target.name}</strong>,</p>"
-        f"<p><strong>{requester_name}</strong> has proposed a shift trade with you.</p>"
-        f"<ul>"
-        f"<li><strong>Their shift:</strong> {role_name} — {shift.title} on {shift_str}</li>"
-        + (f"<li><strong>Reason:</strong> {swap_request.reason}</li>" if swap_request.reason else "")
-        + f"</ul>"
-        f"<p><a href='{url}'>Review the trade request</a></p>"
+    html_body = render_to_string(
+        "scheduling/emails/trade_proposed.html",
+        {
+            "target_name": target.name,
+            "requester_name": requester_name,
+            "label": "Shift Giveaway" if is_giveaway else "Shift Trade Request",
+            "action_verb": "give you a shift" if is_giveaway else "trade shifts with",
+            "role_name": role_name,
+            "shift_title": shift.title,
+            "shift_str": shift_str,
+            "reason": swap_request.reason,
+            "url": url,
+        },
     )
     _send(subject, text_body, html_body, [target.email])
 
@@ -131,10 +141,16 @@ def send_trade_accepted_notify_managers(swap_request, http_request):
         f"  Shift: {role_name} — {shift.title} on {shift_str}\n\n"
         f"Log in to approve or deny: {url}"
     )
-    html_body = (
-        f"<p><strong>{coverer_name}</strong> accepted <strong>{requester_name}</strong>'s trade request.</p>"
-        f"<ul><li><strong>Shift:</strong> {role_name} — {shift.title} on {shift_str}</li></ul>"
-        f"<p><a href='{url}'>Approve or deny in the Requests page</a></p>"
+    html_body = render_to_string(
+        "scheduling/emails/trade_accepted_managers.html",
+        {
+            "requester_name": requester_name,
+            "coverer_name": coverer_name,
+            "role_name": role_name,
+            "shift_title": shift.title,
+            "shift_str": shift_str,
+            "url": url,
+        },
     )
     _send(subject, text_body, html_body, manager_emails)
 
@@ -159,10 +175,14 @@ def send_request_submitted_to_managers(employee, request_type_label, detail, htt
         f"  {detail}\n\n"
         f"Log in to review: {url}"
     )
-    html_body = (
-        f"<p><strong>{employee.name}</strong> submitted a new <strong>{request_type_label}</strong> request.</p>"
-        f"<p>{detail}</p>"
-        f"<p><a href='{url}'>Review in the Requests page</a></p>"
+    html_body = render_to_string(
+        "scheduling/emails/request_submitted_managers.html",
+        {
+            "employee_name": employee.name,
+            "request_type_label": request_type_label,
+            "detail": detail,
+            "url": url,
+        },
     )
     _send(subject, text_body, html_body, manager_emails)
 
@@ -182,127 +202,98 @@ def send_swap_applied(swap_request, http_request):
     shift_str = shift_start.strftime("%A, %B %-d at %-I:%M %p")
     role_name = shift.role.name if shift.role else "Shift"
 
+    def _send_confirmed(recipient, eyebrow, headline, body, detail_rows, cta_label):
+        if not recipient or not recipient.email:
+            return
+        text_lines = "\n".join(f"  {r['label']}: {r['value']}" for r in detail_rows)
+        text_body = f"Hi {recipient.name},\n\n{body}\n\n{text_lines}\n\nView your schedule: {url}"
+        html_body = render_to_string(
+            "scheduling/emails/swap_confirmed.html",
+            {
+                "recipient_name": recipient.name,
+                "eyebrow": eyebrow,
+                "headline": headline,
+                "body": body,
+                "detail_rows": detail_rows,
+                "cta_label": cta_label,
+                "url": url,
+            },
+        )
+        _send(headline, text_body, html_body, [recipient.email])
+
     if swap_request.request_type == ShiftSwapRequest.TYPE_SWAP and target_shift:
         target_start = timezone.localtime(target_shift.start_time)
         target_str = target_start.strftime("%A, %B %-d at %-I:%M %p")
         target_role = target_shift.role.name if target_shift.role else "Shift"
 
-        if requester and requester.email:
-            _send(
-                f"Shift swap confirmed — {target_role} on {target_str}",
-                (
-                    f"Hi {requester.name},\n\n"
-                    f"Your shift swap has been approved and applied.\n\n"
-                    f"  Now scheduled for: {target_role} on {target_str}\n"
-                    f"  Gave away: {role_name} on {shift_str}\n\n"
-                    f"View your schedule: {url}"
-                ),
-                (
-                    f"<p>Hi <strong>{requester.name}</strong>,</p>"
-                    f"<p>Your shift swap has been approved and applied.</p>"
-                    f"<ul>"
-                    f"<li><strong>Now scheduled for:</strong> {target_role} on {target_str}</li>"
-                    f"<li><strong>Gave away:</strong> {role_name} on {shift_str}</li>"
-                    f"</ul>"
-                    f"<p><a href='{url}'>View your schedule</a></p>"
-                ),
-                [requester.email],
-            )
-        if coverer and coverer.email:
-            _send(
-                f"Shift swap confirmed — {role_name} on {shift_str}",
-                (
-                    f"Hi {coverer.name},\n\n"
-                    f"Your shift swap has been approved and applied.\n\n"
-                    f"  Now scheduled for: {role_name} on {shift_str}\n"
-                    f"  Gave away: {target_role} on {target_str}\n\n"
-                    f"View your schedule: {url}"
-                ),
-                (
-                    f"<p>Hi <strong>{coverer.name}</strong>,</p>"
-                    f"<p>Your shift swap has been approved and applied.</p>"
-                    f"<ul>"
-                    f"<li><strong>Now scheduled for:</strong> {role_name} on {shift_str}</li>"
-                    f"<li><strong>Gave away:</strong> {target_role} on {target_str}</li>"
-                    f"</ul>"
-                    f"<p><a href='{url}'>View your schedule</a></p>"
-                ),
-                [coverer.email],
-            )
+        _send_confirmed(
+            requester,
+            eyebrow="Shift Swap Confirmed",
+            headline=f"Shift swap confirmed — {target_role} on {target_str}",
+            body="your shift swap has been approved and applied.",
+            detail_rows=[
+                {"label": "Now scheduled for", "value": f"{target_role} on {target_str}"},
+                {"label": "Gave away", "value": f"{role_name} on {shift_str}"},
+            ],
+            cta_label="View my schedule",
+        )
+        _send_confirmed(
+            coverer,
+            eyebrow="Shift Swap Confirmed",
+            headline=f"Shift swap confirmed — {role_name} on {shift_str}",
+            body="your shift swap has been approved and applied.",
+            detail_rows=[
+                {"label": "Now scheduled for", "value": f"{role_name} on {shift_str}"},
+                {"label": "Gave away", "value": f"{target_role} on {target_str}"},
+            ],
+            cta_label="View my schedule",
+        )
 
     elif swap_request.request_type == ShiftSwapRequest.TYPE_GIVEAWAY:
         if coverer:
-            if requester and requester.email:
-                _send(
-                    f"Shift giveaway confirmed — {role_name} on {shift_str}",
-                    (
-                        f"Hi {requester.name},\n\n"
-                        f"Your shift giveaway has been approved.\n\n"
-                        f"  Removed from your schedule: {role_name} on {shift_str}\n\n"
-                        f"View your schedule: {url}"
-                    ),
-                    (
-                        f"<p>Hi <strong>{requester.name}</strong>,</p>"
-                        f"<p>Your shift giveaway has been approved.</p>"
-                        f"<ul><li><strong>Removed from your schedule:</strong> {role_name} on {shift_str}</li></ul>"
-                        f"<p><a href='{url}'>View your schedule</a></p>"
-                    ),
-                    [requester.email],
-                )
-            if coverer.email:
-                _send(
-                    f"Shift confirmed — {role_name} on {shift_str}",
-                    (
-                        f"Hi {coverer.name},\n\n"
-                        f"A shift has been added to your schedule.\n\n"
-                        f"  Added to your schedule: {role_name} on {shift_str}\n\n"
-                        f"View your schedule: {url}"
-                    ),
-                    (
-                        f"<p>Hi <strong>{coverer.name}</strong>,</p>"
-                        f"<p>A shift has been added to your schedule.</p>"
-                        f"<ul><li><strong>Added:</strong> {role_name} on {shift_str}</li></ul>"
-                        f"<p><a href='{url}'>View your schedule</a></p>"
-                    ),
-                    [coverer.email],
-                )
+            _send_confirmed(
+                requester,
+                eyebrow="Shift Giveaway Approved",
+                headline=f"Shift giveaway confirmed — {role_name} on {shift_str}",
+                body="your shift giveaway has been approved.",
+                detail_rows=[
+                    {"label": "Removed from your schedule", "value": f"{role_name} on {shift_str}"},
+                ],
+                cta_label="View my schedule",
+            )
+            _send_confirmed(
+                coverer,
+                eyebrow="New Shift Added",
+                headline=f"A shift has been added to your schedule",
+                body="a new shift was assigned to you.",
+                detail_rows=[
+                    {"label": "Added to your schedule", "value": f"{role_name} on {shift_str}"},
+                ],
+                cta_label="View my schedule",
+            )
         else:
-            if requester and requester.email:
-                _send(
-                    f"Shift removed — {role_name} on {shift_str}",
-                    (
-                        f"Hi {requester.name},\n\n"
-                        f"Your shift giveaway was approved. The shift has been removed from your schedule.\n\n"
-                        f"  Removed: {role_name} on {shift_str}\n\n"
-                        f"View your schedule: {url}"
-                    ),
-                    (
-                        f"<p>Hi <strong>{requester.name}</strong>,</p>"
-                        f"<p>Your shift giveaway was approved. The shift has been removed from your schedule.</p>"
-                        f"<ul><li><strong>Removed:</strong> {role_name} on {shift_str}</li></ul>"
-                        f"<p><a href='{url}'>View your schedule</a></p>"
-                    ),
-                    [requester.email],
-                )
+            _send_confirmed(
+                requester,
+                eyebrow="Shift Giveaway Approved",
+                headline=f"Shift removed — {role_name} on {shift_str}",
+                body="your shift giveaway was approved. The shift has been removed from your schedule.",
+                detail_rows=[
+                    {"label": "Removed", "value": f"{role_name} on {shift_str}"},
+                ],
+                cta_label="View my schedule",
+            )
 
     elif swap_request.request_type == ShiftSwapRequest.TYPE_PICKUP:
-        if requester and requester.email:
-            _send(
-                f"Pickup confirmed — {role_name} on {shift_str}",
-                (
-                    f"Hi {requester.name},\n\n"
-                    f"Your shift pickup has been confirmed.\n\n"
-                    f"  Added to your schedule: {role_name} on {shift_str}\n\n"
-                    f"View your schedule: {url}"
-                ),
-                (
-                    f"<p>Hi <strong>{requester.name}</strong>,</p>"
-                    f"<p>Your shift pickup has been confirmed.</p>"
-                    f"<ul><li><strong>Added to your schedule:</strong> {role_name} on {shift_str}</li></ul>"
-                    f"<p><a href='{url}'>View your schedule</a></p>"
-                ),
-                [requester.email],
-            )
+        _send_confirmed(
+            requester,
+            eyebrow="Pickup Confirmed",
+            headline=f"Pickup confirmed — {role_name} on {shift_str}",
+            body="your shift pickup has been confirmed.",
+            detail_rows=[
+                {"label": "Added to your schedule", "value": f"{role_name} on {shift_str}"},
+            ],
+            cta_label="View my schedule",
+        )
 
 
 # ── Request approved → employee ───────────────────────────────────────────────
@@ -319,10 +310,13 @@ def send_request_approved_to_employee(employee, request_type_label, detail, http
         f"  {detail}\n\n"
         f"View your requests: {url}"
     )
-    html_body = (
-        f"<p>Hi <strong>{employee.name}</strong>,</p>"
-        f"<p>Your <strong>{request_type_label}</strong> request has been approved.</p>"
-        f"<p>{detail}</p>"
-        f"<p><a href='{url}'>View your requests</a></p>"
+    html_body = render_to_string(
+        "scheduling/emails/request_approved.html",
+        {
+            "employee_name": employee.name,
+            "request_type_label": request_type_label,
+            "detail": detail,
+            "url": url,
+        },
     )
     _send(subject, text_body, html_body, [employee.email])

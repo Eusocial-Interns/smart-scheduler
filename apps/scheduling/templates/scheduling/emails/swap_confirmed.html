@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ headline }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f0eb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0eb;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <span style="font-size:1.35rem;font-weight:800;letter-spacing:-0.02em;color:#7c4a1e;">Eusocial</span>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#ffffff;border-radius:14px;border:1px solid #e8ddd5;box-shadow:0 2px 8px rgba(75,58,44,0.07);padding:36px 32px;">
+
+              <p style="margin:0 0 6px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#b07a4a;">{{ eyebrow }}</p>
+              <h1 style="margin:0 0 16px;font-size:1.35rem;font-weight:800;color:#2e1f0f;line-height:1.25;">
+                {{ headline }}
+              </h1>
+
+              <p style="margin:0 0 20px;font-size:0.95rem;color:#6b5744;">
+                Hi <strong>{{ recipient_name }}</strong>, {{ body }}
+              </p>
+
+              <!-- Detail rows -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fdf7f2;border-radius:8px;border:1px solid #e8ddd5;margin:0 0 24px;">
+                {% for row in detail_rows %}
+                <tr>
+                  <td style="padding:{% if forloop.first %}16px 20px 10px{% elif forloop.last %}10px 20px 16px{% else %}10px 20px{% endif %};">
+                    <p style="margin:0 0 2px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#b07a4a;">{{ row.label }}</p>
+                    <p style="margin:0;font-size:0.95rem;font-weight:600;color:#2e1f0f;">{{ row.value }}</p>
+                  </td>
+                </tr>
+                {% if not forloop.last %}
+                <tr><td style="padding:0 20px;"><div style="height:1px;background:#e8ddd5;"></div></td></tr>
+                {% endif %}
+                {% endfor %}
+              </table>
+
+              <!-- CTA -->
+              <table cellpadding="0" cellspacing="0" style="margin:0;">
+                <tr>
+                  <td style="background:#c96c2b;border-radius:8px;">
+                    <a href="{{ url }}" style="display:inline-block;padding:13px 28px;font-size:0.95rem;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.01em;">
+                      {{ cta_label }} &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <p style="margin:0;font-size:0.75rem;color:#a08878;">
+                Powered by <strong>Eusocial&copy;</strong> &mdash; you received this because your schedule was updated.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
