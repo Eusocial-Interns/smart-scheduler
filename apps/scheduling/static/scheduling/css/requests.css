@@ -389,6 +389,55 @@
     }
 }
 
+/* APPROVAL CARD (incoming swap/giveaway requests for the current employee) */
+.approval-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.35rem 1rem;
+    align-items: center;
+    padding: 0.95rem 1rem;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+}
+
+.approval-card__type {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    grid-column: 1;
+}
+
+.approval-card__title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--ink);
+    grid-column: 1;
+}
+
+.approval-card__sub {
+    font-size: 0.8rem;
+    color: var(--muted);
+    grid-column: 1;
+}
+
+.approval-card__date {
+    font-size: 0.75rem;
+    color: var(--muted);
+    grid-column: 1;
+}
+
+.approval-card__actions {
+    grid-column: 2;
+    grid-row: 1 / span 5;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    align-items: flex-end;
+}
+
 /* STATUS BANNER */
 .status-banner {
     position: fixed;

@@ -387,21 +387,43 @@ async function loadMyRequests() {
 
   if (incoming.length) {
     incomingSection.hidden = false;
-    incomingList.innerHTML = incoming.map(s => `
-      <div class="req-card" data-id="${s.id}">
-        <span class="req-card__type">${s.request_type === "swap" ? "Trade Request" : "Shift Giveaway"}</span>
-        <span class="req-card__title">${s.requester_name} → ${s.shift_title ?? "Shift"}</span>
-        ${s.reason ? `<span class="req-card__sub">${s.reason}</span>` : ""}
-        <div class="req-card__status">
-          <button class="btn-accept" data-id="${s.id}">Accept</button>
-        </div>
-      </div>`).join("");
+    incomingList.innerHTML = incoming.map(s => {
+      const isGiveaway = s.request_type === "giveaway";
+      const roleTag = s.shift_role_name ? `<span class="req-role-tag">${s.shift_role_name}</span>` : "";
+      const body = isGiveaway
+        ? `<span class="approval-card__title">${s.requester_name} wants to give you a shift</span>
+           <span class="approval-card__sub">${roleTag} ${s.shift_title ?? ""} · ${fmtSwapDate(s.shift_start)}</span>`
+        : `<span class="approval-card__title">${s.requester_name} wants to trade with you</span>
+           <span class="approval-card__sub"><span style="opacity:.7">Their shift:</span> ${roleTag} ${s.shift_title ?? ""} · ${fmtSwapDate(s.shift_start)}</span>
+           <span class="approval-card__sub"><span style="opacity:.7">Your shift:</span> ${s.target_shift_role_name ? `<span class="req-role-tag">${s.target_shift_role_name}</span>` : ""} ${s.target_shift_title ?? ""} · ${fmtSwapDate(s.target_shift_start)}</span>`;
+      return `
+        <div class="approval-card">
+          <span class="approval-card__type">${isGiveaway ? "Shift Giveaway" : "Shift Trade Request"}</span>
+          ${body}
+          ${s.reason ? `<span class="approval-card__date">${s.reason}</span>` : ""}
+          <div class="approval-card__actions">
+            <button class="btn-approve" data-id="${s.id}">Accept</button>
+            <button class="btn-deny" data-id="${s.id}">Decline</button>
+          </div>
+        </div>`;
+    }).join("");
 
-    incomingList.querySelectorAll(".btn-accept").forEach(btn => {
+    incomingList.querySelectorAll(".btn-approve").forEach(btn => {
       btn.addEventListener("click", async () => {
         try {
           await api(`/api/v1/shift-swap-requests/${btn.dataset.id}/accept/`, { method: "POST" });
           flash("Accepted — awaiting manager approval.");
+          loadMyRequests();
+        } catch (err) {
+          flash(err.message, false);
+        }
+      });
+    });
+    incomingList.querySelectorAll(".btn-deny").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        try {
+          await api(`/api/v1/shift-swap-requests/${btn.dataset.id}/decline/`, { method: "POST" });
+          flash("Declined.");
           loadMyRequests();
         } catch (err) {
           flash(err.message, false);
