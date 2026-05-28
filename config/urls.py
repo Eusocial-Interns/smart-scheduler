@@ -9,6 +9,8 @@ from django.contrib.auth.views import (
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import path, include
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,6 +20,7 @@ def health_check(request):
     return JsonResponse({"status": "ok"})
 
 
+@method_decorator(never_cache, name="dispatch")
 class LoggingPasswordResetView(PasswordResetView):
     def form_valid(self, form):
         self.request.session['password_reset_requested'] = True
@@ -28,6 +31,7 @@ class LoggingPasswordResetView(PasswordResetView):
             return redirect(self.get_success_url())
 
 
+@method_decorator(never_cache, name="dispatch")
 class ProtectedPasswordResetDoneView(PasswordResetDoneView):
     def get(self, request, *args, **kwargs):
         if not request.session.pop('password_reset_requested', False):
@@ -35,12 +39,14 @@ class ProtectedPasswordResetDoneView(PasswordResetDoneView):
         return super().get(request, *args, **kwargs)
 
 
+@method_decorator(never_cache, name="dispatch")
 class ProtectedPasswordResetConfirmView(PasswordResetConfirmView):
     def form_valid(self, form):
         self.request.session['password_reset_complete'] = True
         return super().form_valid(form)
 
 
+@method_decorator(never_cache, name="dispatch")
 class ProtectedPasswordResetCompleteView(PasswordResetCompleteView):
     def get(self, request, *args, **kwargs):
         if not request.session.pop('password_reset_complete', False):

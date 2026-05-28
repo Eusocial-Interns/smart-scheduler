@@ -7,6 +7,7 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
 from django.shortcuts import render
 from .emails import (
     send_schedule_published,
@@ -1884,31 +1885,37 @@ class DashboardAPIView(APIView):
         return result
 
 
+@never_cache
 @login_required
 def calendar_view(request):
     return render(request, "scheduling/calendar.html")
 
 
+@never_cache
 @login_required
 def weekly_schedule_view(request):
     return render(request, "scheduling/weekly_schedule.html")
 
 
+@never_cache
 @login_required
 def requests_view(request):
     return render(request, "scheduling/requests.html")
 
 
+@never_cache
 @login_required
 def team_setup_view(request):
     return render(request, "scheduling/team_setup.html")
 
 
+@never_cache
 @login_required
 def profile_view(request):
     return render(request, "scheduling/profile.html")
 
 
+@never_cache
 @login_required
 def announcements_view(request):
     profile = employee_profile_for(request.user)
@@ -1918,6 +1925,7 @@ def announcements_view(request):
     })
 
 
+@never_cache
 @login_required
 def chat_view(request):
     return render(request, "scheduling/chat.html")
