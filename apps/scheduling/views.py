@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
@@ -325,32 +324,6 @@ class StaffingRequirementViewSet(viewsets.ModelViewSet):
         translate_django_validation(lambda: serializer.save())
 
 
-def _notify_managers_pickup(swap_request, requester):
-    manager_emails = list(
-        Employee.objects.filter(account_type=Employee.ACCOUNT_TYPE_MANAGER)
-        .exclude(email="")
-        .values_list("email", flat=True)
-    )
-    if not manager_emails:
-        return
-    shift = swap_request.shift
-    shift_start = timezone.localtime(shift.start_time)
-    role_name = shift.role.name if shift.role else "Shift"
-    date_str = shift_start.strftime("%A, %B %-d")
-    time_str = shift_start.strftime("%-I:%M %p")
-    subject = f"Pickup request: {requester.name} wants {role_name} on {date_str}"
-    body = (
-        f"{requester.name} has volunteered to pick up the following open shift:\n\n"
-        f"  Position: {role_name}\n"
-        f"  Shift: {shift.title}\n"
-        f"  Date: {date_str}\n"
-        f"  Time: {time_str}\n\n"
-        f"Log in to approve or deny this request from the Requests page."
-    )
-    try:
-        send_mail(subject, body, None, manager_emails, fail_silently=True)
-    except Exception:
-        pass
 
 
 class ScheduleWeekViewSet(viewsets.ModelViewSet):
@@ -1123,7 +1096,14 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
         instance = translate_django_validation(lambda: serializer.save(**extra))
         if instance:
             if request_type == ShiftSwapRequest.TYPE_PICKUP:
-                _notify_managers_pickup(instance, profile)
+                shift = instance.shift
+                shift_start = timezone.localtime(shift.start_time)
+                role_name = shift.role.name if shift.role else "Shift"
+                detail = (
+                    f"{role_name} — {shift.title} on "
+                    f"{shift_start.strftime('%A, %B %-d')} at {shift_start.strftime('%-I:%M %p')}"
+                )
+                send_request_submitted_to_managers(profile, "pickup", detail, self.request)
             elif request_type == ShiftSwapRequest.TYPE_SWAP and instance.requested_employee:
                 send_trade_proposed(instance, self.request)
 
