@@ -187,6 +187,38 @@ def send_request_submitted_to_managers(employee, request_type_label, detail, htt
     _send(subject, text_body, html_body, manager_emails)
 
 
+# ── Availability batch submitted → all managers ───────────────────────────────
+
+def send_availability_batch_to_managers(employee, details, http_request):
+    from apps.scheduling.models import Employee
+
+    manager_emails = list(
+        Employee.objects.filter(account_type=Employee.ACCOUNT_TYPE_MANAGER)
+        .exclude(email="")
+        .values_list("email", flat=True)
+    )
+    if not manager_emails:
+        return
+
+    subject = f"{employee.name} submitted an availability change request"
+    url = _requests_url(http_request)
+    text_body = (
+        f"{employee.name} has submitted availability change requests.\n\n"
+        + "\n".join(f"  • {d}" for d in details)
+        + f"\n\nLog in to review: {url}"
+    )
+    html_body = render_to_string(
+        "scheduling/emails/request_submitted_managers.html",
+        {
+            "employee_name": employee.name,
+            "request_type_label": "availability change",
+            "details": details,
+            "url": url,
+        },
+    )
+    _send(subject, text_body, html_body, manager_emails)
+
+
 # ── Swap/giveaway/pickup applied → parties involved ──────────────────────────
 
 def send_swap_applied(swap_request, http_request):

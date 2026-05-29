@@ -15,6 +15,7 @@ from .emails import (
     send_request_submitted_to_managers,
     send_request_approved_to_employee,
     send_swap_applied,
+    send_availability_batch_to_managers,
 )
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -966,6 +967,32 @@ class AvailabilityChangeRequestViewSet(viewsets.ModelViewSet):
             raise ValidationError("Only pending requests can be cancelled.")
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticatedSchedulingUser])
+    def batch(self, request):
+        if user_is_manager(request.user):
+            return Response({"detail": "Managers cannot submit availability change requests."}, status=403)
+        profile = require_employee_profile(request)
+        changes = request.data.get("changes", [])
+        if not isinstance(changes, list) or not changes:
+            return Response({"detail": "Provide a non-empty list of changes."}, status=400)
+
+        day_names = dict(enumerate(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]))
+        created = []
+        details = []
+        for item in changes:
+            serializer = self.get_serializer(data=item)
+            serializer.is_valid(raise_exception=True)
+            instance = translate_django_validation(lambda s=serializer: s.save(employee=profile))
+            day_name = day_names.get(instance.day_of_week, "")
+            detail = f"{day_name} → {instance.requested_status}"
+            if instance.effective_date:
+                detail += f" (effective {instance.effective_date})"
+            details.append(detail)
+            created.append(instance)
+
+        send_availability_batch_to_managers(profile, details, request)
+        return Response(self.get_serializer(created, many=True).data, status=201)
 
 
 class TimeOffRequestViewSet(viewsets.ModelViewSet):

@@ -35,8 +35,14 @@
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#fdf7f2;border-radius:8px;border:1px solid #e8ddd5;margin:0 0 24px;">
                 <tr>
                   <td style="padding:16px 20px;">
-                    <p style="margin:0 0 4px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#b07a4a;">Request detail</p>
-                    <p style="margin:0;font-size:0.95rem;color:#2e1f0f;">{{ detail }}</p>
+                    <p style="margin:0 0 8px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#b07a4a;">Request detail</p>
+                    {% if details %}
+                      {% for d in details %}
+                        <p style="margin:0 0 4px;font-size:0.95rem;color:#2e1f0f;">{{ d }}</p>
+                      {% endfor %}
+                    {% else %}
+                      <p style="margin:0;font-size:0.95rem;color:#2e1f0f;">{{ detail }}</p>
+                    {% endif %}
                   </td>
                 </tr>
               </table>

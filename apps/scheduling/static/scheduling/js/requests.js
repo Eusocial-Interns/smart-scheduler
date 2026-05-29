@@ -73,12 +73,12 @@ document.getElementById("availability-request-form")?.addEventListener("submit",
 
   const days = Array.from(selectedDays);
   try {
-    for (const day of days) {
-      await api("/api/v1/availability-change-requests/", {
-        method: "POST",
-        body: JSON.stringify({ day_of_week: Number(day), requested_status: status, effective_date, reason }),
-      });
-    }
+    await api("/api/v1/availability-change-requests/batch/", {
+      method: "POST",
+      body: JSON.stringify({
+        changes: days.map(day => ({ day_of_week: Number(day), requested_status: status, effective_date, reason })),
+      }),
+    });
     flash(`Availability change submitted for ${days.length} day${days.length > 1 ? "s" : ""}.`);
     e.target.reset();
     selectedDays.clear();
