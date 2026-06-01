@@ -29,6 +29,10 @@
     box-sizing: border-box;
 }
 
+html {
+    background-color: #f9f2e9;
+}
+
 html,
 body {
     overflow-x: hidden;
