@@ -8,35 +8,8 @@
     content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#f9f2e9">
     <title>Sign In — Smart Scheduler</title>
+    <link rel="stylesheet" href="{% static 'scheduling/css/base.css' %}">
     <style>
-
-        :root {
-            --bg: #f5efe6;
-            --surface: rgba(255, 251, 246, 0.92);
-            --surface-strong: #fffdf8;
-            --ink: #26211d;
-            --muted: #6d6258;
-            --accent: #c96c2b;
-            --accent-soft: #f1c7a1;
-            --accent-deep: #8d4013;
-            --line: rgba(77, 54, 37, 0.14);
-            --shadow: 0 20px 45px rgba(61, 36, 19, 0.12);
-            --radius-lg: 28px;
-            --radius-md: 18px;
-            --radius-sm: 12px;
-
-            /* Department colours */
-            --dept-foh-bg: rgba(201, 108, 43, 0.12);
-            --dept-foh-border: rgba(201, 108, 43, 0.38);
-            --dept-foh-text: #8d4013;
-            --dept-boh-bg: rgba(45, 100, 160, 0.10);
-            --dept-boh-border: rgba(45, 100, 160, 0.32);
-            --dept-boh-text: #1d4e82;
-            --dept-mgmt-bg: rgba(110, 60, 160, 0.10);
-            --dept-mgmt-border: rgba(110, 60, 160, 0.32);
-            --dept-mgmt-text: #5a2d8c;
-        }
-
         html {
             min-height: -webkit-fill-available;
             background-color: #efe5d8;
@@ -67,20 +40,6 @@
             color: var(--accent-deep);
             margin-bottom: 1.5rem;
             text-align: center;
-        }
-
-        .button-primary {
-            width: 100%;
-            border: 0;
-            border-radius: 999px;
-            padding: 0.8rem 1.15rem;
-            font-weight: 600;
-            cursor: pointer;
-            color: #fff;
-            background: linear-gradient(135deg, #c96c2b 0%, #8d4013 100%);
-            box-shadow: 0 12px 26px rgba(141, 64, 19, 0.22);
-            font-family: inherit;
-            font-size: 1rem;
         }
 
         .login-card {
