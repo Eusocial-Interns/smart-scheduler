@@ -1,6 +1,6 @@
 <nav class="top-nav">
     <a class="brand-mark" href="{% url 'calendar' %}">
-        <span class="brand-mark__text">Eusocial</span>
+        <span class="brand-mark__text">SmartSchedule</span>
     </a>
 
     <div class="top-nav__page">
@@ -19,7 +19,7 @@
         {% elif request.resolver_match.url_name == 'profile' %}
             <span>Profile</span>
         {% else %}
-            <span>Eusocial</span>
+            <span>SmartSchedule</span>
         {% endif %}
     </div>
 
