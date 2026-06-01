@@ -10,7 +10,11 @@
     <title>Sign In — Smart Scheduler</title>
     <link rel="stylesheet" href="{% static 'scheduling/css/base.css' %}">
     <style>
-        html,
+        html {
+            height: 100%;
+            background-color: #efe5d8;
+        }
+
         body {
             height: 100%;
             overflow: hidden;
@@ -159,8 +163,14 @@
     </div>
 </div>
 <script>
+    let lastTap = 0;
     document.addEventListener('touchmove', function(e) {
         if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', function(e) {
+        const now = Date.now();
+        if (now - lastTap < 300) e.preventDefault();
+        lastTap = now;
     }, { passive: false });
 </script>
 </body>
