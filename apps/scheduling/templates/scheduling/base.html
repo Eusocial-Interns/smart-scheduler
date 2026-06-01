@@ -9,6 +9,9 @@
     <title>{% block title %}Smart Scheduler{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'scheduling/css/base.css' %}?v=20260529">
     <link rel="stylesheet" href="{% static 'scheduling/css/nav_bar.css' %}?v=20260529">
+    <link rel="icon" type="image/svg+xml" href="{% static 'scheduling/images/favicon.svg' %}">
+    <link rel="icon" type="image/png" href="{% static 'scheduling/images/favicon.png' %}">
+    <link rel="shortcut icon" href="{% static 'scheduling/images/favicon.ico' %}">
     {% block page_css %}{% endblock %}
 </head>
 <body data-route="{{ request.resolver_match.url_name|default:'page' }}">
