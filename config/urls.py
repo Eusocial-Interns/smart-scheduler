@@ -1,6 +1,7 @@
 
 from django.contrib import admin
 from django.contrib.auth.views import (
+    LoginView,
     PasswordResetView,
     PasswordResetDoneView,
     PasswordResetConfirmView,
@@ -11,6 +12,7 @@ from django.shortcuts import redirect
 from django.urls import path, include
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
+from django.middleware.csrf import get_token
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +21,12 @@ logger = logging.getLogger(__name__)
 def health_check(request):
     return JsonResponse({"status": "ok"})
 
+@method_decorator(never_cache, name="dispatch")
+class FreshLoginView(LoginView):
+    def get(self, request, *args, **kwargs):
+        # Ensure CSRF token is set for the login form
+        get_token(request)
+        return super().get(request, *args, **kwargs)
 
 @method_decorator(never_cache, name="dispatch")
 class LoggingPasswordResetView(PasswordResetView):
@@ -59,6 +67,7 @@ class ProtectedPasswordResetCompleteView(PasswordResetCompleteView):
 urlpatterns = [
     path('health/', health_check),
     path('admin/', admin.site.urls),
+    path('accounts/login/', FreshLoginView.as_view(), name='login'),
     path('accounts/password_reset/', LoggingPasswordResetView.as_view(), name='password_reset'),
     path('accounts/password_reset/done/', ProtectedPasswordResetDoneView.as_view(), name='password_reset_done'),
     path('accounts/reset/<uidb64>/<token>/', ProtectedPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
