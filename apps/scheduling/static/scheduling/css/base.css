@@ -30,11 +30,11 @@
 }
 
 html {
-    background:
+    background-color: #f5e8d5;
+    background-image:
         radial-gradient(circle at top left, rgba(240, 189, 137, 0.45), transparent 32%),
         radial-gradient(circle at top right, rgba(173, 97, 39, 0.18), transparent 24%),
         linear-gradient(180deg, #f9f2e9 0%, #f4ecdf 45%, #efe5d8 100%);
-    background-attachment: fixed;
     min-height: 100%;
 }
 html,
