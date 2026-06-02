@@ -219,6 +219,43 @@ def send_availability_batch_to_managers(employee, details, http_request):
     _send(subject, text_body, html_body, manager_emails)
 
 
+# ── Night off given → employee ───────────────────────────────────────────────
+
+def send_night_off_to_employee(employee, shift, http_request):
+    if not employee.email:
+        return
+
+    from django.utils import timezone as tz
+    shift_date = tz.localtime(shift.start_time).strftime("%A, %B %-d")
+    shift_time = (
+        tz.localtime(shift.start_time).strftime("%-I:%M %p")
+        + " – "
+        + tz.localtime(shift.end_time).strftime("%-I:%M %p")
+    )
+    role_name = shift.role.name if shift.role_id else "your shift"
+    url = _requests_url(http_request)
+
+    subject = "You've been given the night off"
+    text_body = (
+        f"Hi {employee.name},\n\n"
+        f"Your manager has given you the night off for {shift_date}.\n\n"
+        f"  {role_name} · {shift_time}\n\n"
+        f"You're all set — no action needed.\n\n"
+        f"View your schedule: {url}"
+    )
+    html_body = render_to_string(
+        "scheduling/emails/night_off.html",
+        {
+            "employee_name": employee.name,
+            "shift_date": shift_date,
+            "shift_time": shift_time,
+            "role_name": role_name,
+            "url": url,
+        },
+    )
+    _send(subject, text_body, html_body, [employee.email])
+
+
 # ── Swap/giveaway/pickup applied → parties involved ──────────────────────────
 
 def send_swap_applied(swap_request, http_request):

@@ -16,6 +16,7 @@ from .emails import (
     send_request_approved_to_employee,
     send_swap_applied,
     send_availability_batch_to_managers,
+    send_night_off_to_employee,
 )
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -704,6 +705,13 @@ class AssignmentViewSet(viewsets.ModelViewSet):
                 serializer.validated_data,
             )
         )
+
+    def perform_destroy(self, instance):
+        employee = instance.employee
+        shift = instance.shift
+        instance.delete()
+        if user_is_manager(self.request.user):
+            send_night_off_to_employee(employee, shift, self.request)
 
     @action(detail=True, methods=["post"], permission_classes=[IsManager])
     def move(self, request, pk=None):
