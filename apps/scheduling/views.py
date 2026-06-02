@@ -1282,8 +1282,18 @@ class WeeklyScheduleAPIView(APIView):
         schedule_week = ScheduleWeek.objects.filter(week_start=week_start).first()
 
         profile = None
+        dept_view = None  # non-None when employee is viewing a full department schedule
         if not is_manager:
             profile = require_employee_profile(request)
+            requested_dept = request.query_params.get("department", "").strip()
+            if requested_dept:
+                emp_depts = set(profile.roles.values_list("department", flat=True))
+                if profile.primary_role_id:
+                    pr_dept = Role.objects.filter(pk=profile.primary_role_id).values_list("department", flat=True).first()
+                    if pr_dept:
+                        emp_depts.add(pr_dept)
+                if requested_dept in emp_depts:
+                    dept_view = requested_dept
             week_visible = schedule_week and schedule_week.status == ScheduleWeek.STATUS_PUBLISHED
             if not week_visible and schedule_week:
                 emp_depts = set(profile.roles.values_list("department", flat=True))
@@ -1337,7 +1347,9 @@ class WeeklyScheduleAPIView(APIView):
             .filter(start_time__date__gte=week_start, start_time__date__lte=week_end)
             .order_by("start_time")
         )
-        if profile:
+        if dept_view:
+            shifts = shifts.filter(role__department=dept_view)
+        elif profile:
             shifts = shifts.filter(assignments__employee=profile).distinct()
 
         role_id_by_name = {role.name: role.id for role in roles}
@@ -1378,7 +1390,7 @@ class WeeklyScheduleAPIView(APIView):
             )
 
             assignments = list(shift.assignments.all())
-            if profile:
+            if profile and not dept_view:
                 assignments = [
                     assignment for assignment in assignments if assignment.employee_id == profile.id
                 ]

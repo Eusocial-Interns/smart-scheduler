@@ -59,7 +59,8 @@ const state = {
     editingRequirementGroup: null,
     newShiftTarget: null,
     pendingForceAssign: null,
-    activeDepartment: null,  // null = All, "foh" | "boh" | "management"
+    activeDepartment: null,    // manager: null = All, "foh" | "boh" | "management"
+    employeeViewDept: null,    // employee: null = My Schedule, "foh" | "boh" | "management"
     viewingSnapshot: false,
 };
 
@@ -167,11 +168,16 @@ function bootstrapWeeklySchedule() {
     document.getElementById("dept-tabs").addEventListener("click", (e) => {
         const btn = e.target.closest(".dept-tab");
         if (!btn) return;
-        state.activeDepartment = btn.dataset.dept || null;
         document.querySelectorAll(".dept-tab").forEach((t) => t.classList.toggle("is-active", t === btn));
-        if (state.schedule) renderSchedule(state.schedule);
-        renderEmployees();
-        renderStaffingRequirements();
+        if (isManager()) {
+            state.activeDepartment = btn.dataset.dept || null;
+            if (state.schedule) renderSchedule(state.schedule);
+            renderEmployees();
+            renderStaffingRequirements();
+        } else {
+            state.employeeViewDept = btn.dataset.dept || null;
+            loadSchedule();
+        }
     });
     closedDayToggles.addEventListener("click", (event) => {
         const btn = event.target.closest("[data-action='toggle-closed-day']");
@@ -260,6 +266,20 @@ async function loadCurrentUser() {
             document.getElementById("dept-tabs").hidden = false;
             loadEmployees();
             loadClosedDays();
+        } else {
+            const deptLabels = { foh: "Front of House", boh: "Back of House", management: "Management" };
+            const deptOrder = ["foh", "boh", "management"];
+            const myDepts = (state.me.role_departments || [])
+                .filter((d) => deptOrder.includes(d))
+                .sort((a, b) => deptOrder.indexOf(a) - deptOrder.indexOf(b));
+            if (myDepts.length > 0) {
+                const tabsEl = document.getElementById("dept-tabs");
+                tabsEl.innerHTML = `
+                    <button class="dept-tab is-active" type="button" data-dept="">My Schedule</button>
+                    ${myDepts.map((d) => `<button class="dept-tab dept-tab--${d}" type="button" data-dept="${d}">${deptLabels[d]}</button>`).join("")}
+                `;
+                tabsEl.hidden = false;
+            }
         }
         if (state.schedule) {
             renderSchedule(state.schedule);
@@ -338,7 +358,11 @@ async function loadSchedule() {
     weekRange.textContent = `${formatDate(dateKey(state.weekStart))} – ${formatDate(dateKey(reqEnd))}`;
 
     try {
-        const schedule = await fetchJson(`/api/v1/schedule/week/?start=${dateKey(state.weekStart)}`);
+        let scheduleUrl = `/api/v1/schedule/week/?start=${dateKey(state.weekStart)}`;
+        if (!isManager() && state.employeeViewDept) {
+            scheduleUrl += `&department=${state.employeeViewDept}`;
+        }
+        const schedule = await fetchJson(scheduleUrl);
         state.schedule = schedule;
         renderSchedule(schedule);
     } catch (error) {
@@ -462,7 +486,7 @@ function renderSchedule(schedule) {
         rolesToRender = rolesToRender.filter((role) => role.role_department === state.activeDepartment);
     }
 
-    if (!isManager() && state.me) {
+    if (!isManager() && state.me && !state.employeeViewDept) {
         const myId = state.me.id;
         rolesToRender = rolesToRender
             .map((role) => {

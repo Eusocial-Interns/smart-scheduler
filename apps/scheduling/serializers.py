@@ -24,6 +24,7 @@ from apps.scheduling.models import (
 class EmployeeSerializer(serializers.ModelSerializer):
     primary_role_name = serializers.CharField(source="primary_role.name", read_only=True)
     role_names = serializers.SerializerMethodField()
+    role_departments = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
@@ -35,6 +36,12 @@ class EmployeeSerializer(serializers.ModelSerializer):
         if obj.primary_role and obj.primary_role.name not in names:
             names.insert(0, obj.primary_role.name)
         return names
+
+    def get_role_departments(self, obj):
+        depts = set(obj.roles.values_list("department", flat=True))
+        if obj.primary_role_id:
+            depts.add(obj.primary_role.department)
+        return list(depts)
 
 
 class RoleSerializer(serializers.ModelSerializer):
