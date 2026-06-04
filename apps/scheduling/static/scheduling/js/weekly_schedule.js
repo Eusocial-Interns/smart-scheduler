@@ -323,8 +323,8 @@ function renderEmployees() {
 
     employeeBenchList.innerHTML = employees.map((employee) => `
         <article class="employee-chip" draggable="true" data-employee-id="${employee.id}">
-            <strong>${escapeHtml(employee.name)}</strong>
-            <small>${escapeHtml(employee.primary_role_name || (employee.role_names && employee.role_names[0]) || "No role")}</small>
+            <strong draggable="false">${escapeHtml(employee.name)}</strong>
+            <small draggable="false">${escapeHtml(employee.primary_role_name || (employee.role_names && employee.role_names[0]) || "No role")}</small>
         </article>
     `).join("");
 }
@@ -937,7 +937,7 @@ function allowAssignmentDrop(event) {
 
     event.preventDefault();
     targetCard.classList.add("is-drop-target");
-    event.dataTransfer.dropEffect = "move";
+    event.dataTransfer.dropEffect = state.draggedEmployeeId ? "copy" : "move";
 }
 
 function clearDropTarget(event) {

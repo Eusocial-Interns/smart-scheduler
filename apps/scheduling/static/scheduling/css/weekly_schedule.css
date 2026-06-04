@@ -606,6 +606,8 @@
     background: rgba(255, 255, 255, 0.78);
     color: var(--ink);
     cursor: grab;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .employee-chip.is-dragging {
