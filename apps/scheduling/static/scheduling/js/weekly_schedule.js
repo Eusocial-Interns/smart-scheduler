@@ -770,6 +770,24 @@ function isManager() {
     return state.me?.account_type === "manager";
 }
 
+function _lockModalButtons(buttons, loadingLabel) {
+    buttons.forEach((btn) => {
+        if (!btn) return;
+        btn.disabled = true;
+        btn.dataset.originalText = btn.textContent;
+        if (loadingLabel && btn === buttons[0]) btn.textContent = loadingLabel;
+    });
+}
+
+function _unlockModalButtons(buttons) {
+    buttons.forEach((btn) => {
+        if (!btn) return;
+        btn.disabled = false;
+        if (btn.dataset.originalText) btn.textContent = btn.dataset.originalText;
+        delete btn.dataset.originalText;
+    });
+}
+
 function startAssignmentDrag(event) {
     const card = event.target.closest(".weekly-assignment[data-assignment-id]");
     if (!isManager() || state.viewingSnapshot || !card) {
@@ -914,7 +932,11 @@ function closeUnavailabilityModal() {
 async function forceAssign() {
     const { employeeId, shiftId } = state.pendingForceAssign || {};
     if (!employeeId || !shiftId) return;
-    closeUnavailabilityModal();
+    const forceBtn  = document.getElementById("unavailability-force");
+    const cancelBtn = document.getElementById("unavailability-cancel");
+    forceBtn.disabled  = true;
+    forceBtn.textContent = "Adding…";
+    cancelBtn.disabled = true;
     try {
         await fetchJson("/api/v1/assignments/force-create/", {
             method: "POST",
@@ -922,9 +944,13 @@ async function forceAssign() {
             body: JSON.stringify({ employee: employeeId, shift: shiftId }),
         });
         state.lastGenerationSummary = null;
+        closeUnavailabilityModal();
         await loadSchedule();
         setStatus("Employee added to schedule.", "success");
     } catch (error) {
+        forceBtn.disabled  = false;
+        forceBtn.textContent = "Add to schedule anyway";
+        cancelBtn.disabled = false;
         setStatus(error.message || "Unable to add employee.", "error");
     }
 }
@@ -1081,6 +1107,9 @@ async function createShiftAndAssign() {
         return;
     }
 
+    const submitBtn = shiftEditForm.querySelector('[type="submit"]');
+    _lockModalButtons([submitBtn, shiftEditCancel], "Saving…");
+
     const closeTime = closeTimeFor(date);
 
     try {
@@ -1096,26 +1125,33 @@ async function createShiftAndAssign() {
         });
         const emp = state.employees.find((e) => String(e.id) === String(employeeId));
         const ok = await tryCreateAssignment(employeeId, shift.id, emp?.name || "");
+        closeShiftEditor();
         if (ok) {
-            closeShiftEditor();
             state.lastGenerationSummary = null;
             await loadSchedule();
             setStatus("Employee assigned to new shift.", "success");
-        } else {
-            closeShiftEditor();
         }
     } catch (error) {
+        _unlockModalButtons([submitBtn, shiftEditCancel]);
         setStatus(error.message || "Unable to create shift.", "error");
     }
 }
 
 async function deleteAssignment() {
-    if (!state.editingAssignmentId) {
-        return;
-    }
+    if (!state.editingAssignmentId) return;
     const id = state.editingAssignmentId;
-    closeShiftEditor();
-    await deleteAssignmentById(id);
+    const submitBtn = shiftEditForm.querySelector('[type="submit"]');
+    _lockModalButtons([shiftEditDelete, submitBtn, shiftEditCancel], "Removing…");
+    try {
+        await fetchJson(`/api/v1/assignments/${id}/`, { method: "DELETE" });
+        state.lastGenerationSummary = null;
+        closeShiftEditor();
+        await loadSchedule();
+        setStatus("Assignment removed.", "success");
+    } catch (error) {
+        _unlockModalButtons([shiftEditDelete, submitBtn, shiftEditCancel]);
+        setStatus(error.message || "Unable to remove assignment.", "error");
+    }
 }
 
 async function deleteAssignmentById(id) {
@@ -1233,7 +1269,7 @@ async function openSlotFillModal(card) {
         `).join("");
         list.querySelectorAll(".slot-fill-option").forEach(btn => {
             const emp = employees.find((e) => String(e.id) === btn.dataset.employeeId);
-            btn.addEventListener("click", () => assignToOpenSlot(btn.dataset.employeeId, btn.dataset.shiftId, emp?.name || ""));
+            btn.addEventListener("click", () => assignToOpenSlot(btn.dataset.employeeId, btn.dataset.shiftId, emp?.name || "", btn));
         });
     } catch (err) {
         list.innerHTML = `<div class="empty-state">Could not load employees: ${escapeHtml(err.message)}</div>`;
@@ -1241,34 +1277,44 @@ async function openSlotFillModal(card) {
 }
 
 function closeSlotFillModal() {
-    document.getElementById("slot-fill-modal").hidden = true;
+    const modal = document.getElementById("slot-fill-modal");
+    _unlockModalButtons([...modal.querySelectorAll("button")]);
+    modal.hidden = true;
 }
 
 async function deleteOpenSlot() {
     const modal = document.getElementById("slot-fill-modal");
     const shiftId = modal.dataset.shiftId;
     if (!shiftId) return;
-    closeSlotFillModal();
+    const deleteBtn = document.getElementById("slot-fill-delete");
+    const cancelBtn = document.getElementById("slot-fill-cancel");
+    _lockModalButtons([deleteBtn, cancelBtn], "Deleting…");
     try {
         await fetchJson(`/api/v1/shifts/${shiftId}/close-slot/`, { method: "POST" });
         state.lastGenerationSummary = null;
+        closeSlotFillModal();
         await loadSchedule();
         setStatus("Slot deleted.", "success");
     } catch (err) {
+        _unlockModalButtons([deleteBtn, cancelBtn]);
         setStatus(err.message || "Unable to delete slot.", "error");
     }
 }
 
-async function assignToOpenSlot(employeeId, shiftId, employeeName) {
-    closeSlotFillModal();
+async function assignToOpenSlot(employeeId, shiftId, employeeName, btn) {
+    const deleteBtn = document.getElementById("slot-fill-delete");
+    const cancelBtn = document.getElementById("slot-fill-cancel");
+    _lockModalButtons([btn, deleteBtn, cancelBtn], "Adding…");
     try {
         const ok = await tryCreateAssignment(employeeId, shiftId, employeeName);
+        closeSlotFillModal();
         if (ok) {
             state.lastGenerationSummary = null;
             await loadSchedule();
             setStatus("Employee assigned to open slot.", "success");
         }
     } catch (err) {
+        _unlockModalButtons([btn, deleteBtn, cancelBtn]);
         setStatus(err.message || "Unable to assign employee.", "error");
     }
 }
@@ -1277,6 +1323,7 @@ function closeShiftEditor() {
     state.editingAssignmentId = null;
     state.newShiftTarget = null;
     shiftEditForm.reset();
+    _unlockModalButtons([...shiftEditForm.querySelectorAll("button")]);
     shiftEditModal.hidden = true;
 }
 
@@ -1288,9 +1335,10 @@ async function saveShiftEdit(event) {
         return;
     }
 
-    if (!state.editingAssignmentId) {
-        return;
-    }
+    if (!state.editingAssignmentId) return;
+
+    const submitBtn = shiftEditForm.querySelector('[type="submit"]');
+    _lockModalButtons([submitBtn, shiftEditCancel], "Saving…");
 
     try {
         await fetchJson(`/api/v1/assignments/${state.editingAssignmentId}/reschedule/`, {
@@ -1306,6 +1354,7 @@ async function saveShiftEdit(event) {
         await loadSchedule();
         setStatus("Shift updated.", "success");
     } catch (error) {
+        _unlockModalButtons([submitBtn, shiftEditCancel]);
         setStatus(error.message || "Unable to update shift.", "error");
     }
 }
