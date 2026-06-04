@@ -749,19 +749,19 @@ function renderAssignment(assignment) {
     if (assignment.is_open) {
         return `
             <article class="weekly-assignment weekly-assignment--open" ${dataAttributes}>
-                <strong>Open slot</strong>
-                <span class="weekly-assignment__time">${escapeHtml(assignment.display_time)}</span>
-                <small>${escapeHtml(assignment.shift_title)}</small>
+                <strong draggable="false">Open slot</strong>
+                <span draggable="false" class="weekly-assignment__time">${escapeHtml(assignment.display_time)}</span>
+                <small draggable="false">${escapeHtml(assignment.shift_title)}</small>
             </article>
         `;
     }
 
     return `
         <article class="weekly-assignment weekly-assignment--${shiftClass(assignment.shift_title)}" ${dataAttributes}>
-            <strong>${escapeHtml(assignment.employee_name)}</strong>
-            <span class="weekly-assignment__time">${escapeHtml(assignment.display_time)}</span>
-            <small>${escapeHtml(assignment.shift_title)}</small>
-            ${notes ? `<small>${escapeHtml(notes)}</small>` : ""}
+            <strong draggable="false">${escapeHtml(assignment.employee_name)}</strong>
+            <span draggable="false" class="weekly-assignment__time">${escapeHtml(assignment.display_time)}</span>
+            <small draggable="false">${escapeHtml(assignment.shift_title)}</small>
+            ${notes ? `<small draggable="false">${escapeHtml(notes)}</small>` : ""}
         </article>
     `;
 }
