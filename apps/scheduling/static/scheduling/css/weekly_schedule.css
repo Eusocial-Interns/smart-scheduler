@@ -283,6 +283,12 @@
     min-width: 800px;
     display: grid;
     grid-template-columns: 140px repeat(var(--day-count, 7), minmax(108px, 1fr));
+    transition: opacity 120ms ease;
+}
+
+.weekly-grid.is-refreshing {
+    opacity: 0.45;
+    pointer-events: none;
 }
 
 .weekly-loading {

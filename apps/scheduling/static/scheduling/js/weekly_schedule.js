@@ -87,6 +87,7 @@ function bootstrapWeeklySchedule() {
         state.weekStart.setDate(state.weekStart.getDate() - 7);
         state.lastGenerationSummary = null;
         state.viewingSnapshot = false;
+        state.schedule = null;
         loadSchedule();
         loadClosedDays();
     });
@@ -95,6 +96,7 @@ function bootstrapWeeklySchedule() {
         state.weekStart.setDate(state.weekStart.getDate() + 7);
         state.lastGenerationSummary = null;
         state.viewingSnapshot = false;
+        state.schedule = null;
         loadSchedule();
         loadClosedDays();
     });
@@ -103,6 +105,7 @@ function bootstrapWeeklySchedule() {
         state.weekStart = startOfWeek(new Date());
         state.lastGenerationSummary = null;
         state.viewingSnapshot = false;
+        state.schedule = null;
         loadSchedule();
         loadClosedDays();
     });
@@ -351,7 +354,11 @@ async function loadStaffingRequirements() {
 }
 
 async function loadSchedule() {
-    weeklyGrid.innerHTML = '<div class="weekly-loading">Loading weekly schedule...</div>';
+    if (state.schedule) {
+        weeklyGrid.classList.add("is-refreshing");
+    } else {
+        weeklyGrid.innerHTML = '<div class="weekly-loading">Loading weekly schedule...</div>';
+    }
 
     const reqEnd = new Date(state.weekStart);
     reqEnd.setDate(reqEnd.getDate() + 6);
@@ -368,6 +375,8 @@ async function loadSchedule() {
     } catch (error) {
         weeklyGrid.innerHTML = '<div class="weekly-loading">Unable to load weekly schedule.</div>';
         setStatus(error.message || "Unable to load weekly schedule.", "error");
+    } finally {
+        weeklyGrid.classList.remove("is-refreshing");
     }
 }
 
