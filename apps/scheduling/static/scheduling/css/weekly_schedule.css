@@ -372,6 +372,8 @@
 
 .weekly-assignment[draggable="true"] {
     cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .weekly-assignment[draggable="true"]:active {

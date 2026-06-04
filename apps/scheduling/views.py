@@ -414,6 +414,38 @@ class ScheduleWeekViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False,
+        methods=["get"],
+        permission_classes=[IsManager],
+        url_path="schedule-excel",
+    )
+    def schedule_excel(self, request):
+        from django.http import HttpResponse
+        from .excel_generation import generate_schedule_excel
+
+        week_start = parse_date(request.query_params.get("week_start", ""))
+        if not week_start:
+            raise ValidationError({"week_start": ["A valid week_start date is required."]})
+
+        department = request.query_params.get("department") or None
+
+        try:
+            schedule_week = ScheduleWeek.objects.get(week_start=week_start)
+        except ScheduleWeek.DoesNotExist:
+            raise ValidationError("No schedule found for that week.")
+
+        xlsx_bytes = generate_schedule_excel(schedule_week, department=department)
+        suffix = f"_{department}" if department else ""
+        filename = f"schedule_{week_start}{suffix}.xlsx"
+
+        response = HttpResponse(
+            xlsx_bytes,
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    @action(
+        detail=False,
         methods=["post"],
         permission_classes=[IsManager],
         url_path="discard-draft",

@@ -1538,6 +1538,21 @@ async function publishWeek() {
                 : "Schedule published. Employees can now see this week.",
             "success"
         );
+
+        let xlsxUrl = `/api/v1/schedule-weeks/schedule-excel/?week_start=${dateKey(state.weekStart)}`;
+        if (state.activeDepartment) xlsxUrl += `&department=${state.activeDepartment}`;
+        const resp = await fetch(xlsxUrl, { credentials: "same-origin" });
+        if (resp.ok) {
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = blobUrl;
+            a.download = `schedule-${dateKey(state.weekStart)}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        }
     } catch (error) {
         setStatus(error.message || "Unable to publish schedule.", "error");
     }
