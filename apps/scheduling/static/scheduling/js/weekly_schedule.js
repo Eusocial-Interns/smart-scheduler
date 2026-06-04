@@ -925,8 +925,10 @@ async function openUnavailabilityModal(employeeId, shiftId, employeeName, knownD
 
 function closeUnavailabilityModal() {
     state.pendingForceAssign = null;
-    document.getElementById("unavailability-modal").hidden = true;
-    document.getElementById("unavailability-force").hidden = false; // reset for next open
+    const modal = document.getElementById("unavailability-modal");
+    _unlockModalButtons([...modal.querySelectorAll("button")]);
+    modal.hidden = true;
+    document.getElementById("unavailability-force").hidden = false;
 }
 
 async function forceAssign() {
@@ -934,9 +936,7 @@ async function forceAssign() {
     if (!employeeId || !shiftId) return;
     const forceBtn  = document.getElementById("unavailability-force");
     const cancelBtn = document.getElementById("unavailability-cancel");
-    forceBtn.disabled  = true;
-    forceBtn.textContent = "Adding…";
-    cancelBtn.disabled = true;
+    _lockModalButtons([forceBtn, cancelBtn], "Adding…");
     try {
         await fetchJson("/api/v1/assignments/force-create/", {
             method: "POST",
@@ -948,9 +948,7 @@ async function forceAssign() {
         await loadSchedule();
         setStatus("Employee added to schedule.", "success");
     } catch (error) {
-        forceBtn.disabled  = false;
-        forceBtn.textContent = "Add to schedule anyway";
-        cancelBtn.disabled = false;
+        _unlockModalButtons([forceBtn, cancelBtn]);
         setStatus(error.message || "Unable to add employee.", "error");
     }
 }
