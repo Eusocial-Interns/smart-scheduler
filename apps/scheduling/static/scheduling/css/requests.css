@@ -515,3 +515,29 @@
         text-align: center;
     }
 }
+
+/* Prevent form controls from overflowing their containers */
+.req-panel form,
+.req-panel .field,
+.form-row > * {
+    min-width: 0;
+}
+
+.req-panel input,
+.req-panel select,
+.req-panel textarea {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* iOS Safari date-input fix */
+.req-panel input[type="date"] {
+    width: 0;
+    min-width: 100%;
+    max-width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+}
